@@ -8,34 +8,54 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root { --primary:#6366f1; --secondary:#6b7280; --danger:#ef4444; --bg:#fafafa; --card:#ffffff; --radius:12px; --muted:#6b7280 }
-    body{font-family:Inter, Arial, sans-serif;background:var(--bg);margin:0;padding:24px;color:#111827;}
+    body{font-family:Inter, Arial, sans-serif;background:var(--bg);margin:0;padding:16px;color:#111827;transition:all .3s ease;}
     body.dark{background:#111827;color:#f3f4f6}
-    .container{max-width:1050px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,0.05);padding:24px;}
+    .container{max-width:1050px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,0.05);padding:16px;}
     .brand{text-align:center;font-size:18px;font-weight:bold;color:var(--primary);margin-bottom:10px;}
     .topbar{display:flex;justify-content:flex-start;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}
     .topbar .spacer{flex:1}
-    .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;}
+    .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;overflow-x:auto}
     body.dark .card{background:#1f2937;border-color:#374151;color:#f9fafb}
     label{display:block;font-size:14px;color:var(--muted);margin-top:10px}
     input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e5e7eb;margin-top:4px;font-size:14px;box-sizing:border-box}
     .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
-    .form-row > div{flex:1;min-width:0}
+    .form-row > div{flex:1;min-width:150px}
     .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    button{padding:8px 12px;border-radius:8px;border:0;color:#fff;cursor:pointer;transition:background 0.3s}
+    button{padding:10px 14px;border-radius:8px;border:0;color:#fff;cursor:pointer;transition:background 0.3s, transform 0.1s}
+    button:active{transform:scale(0.97)}
     button.primary{background:var(--primary)}button.secondary{background:var(--secondary)}button.ghost{background:transparent;color:var(--primary);border:1px solid #d1d5db}
-    table{width:100%;border-collapse:collapse;margin-top:14px}
-    th,td{border-bottom:1px solid #e5e7eb;padding:10px;font-size:14px}
-    th{background:#f9fafb;color:var(--muted);text-align:left}
-    .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px}
-    .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;min-width:600px}
+    th,td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:left}
+    th{background:#f9fafb;color:var(--muted)}
+    .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px;align-self:center}
+    .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:13px}
     .edit-btn{background:#c7d2fe;color:#1e3a8a}.del-btn{background:#fee2e2;color:#b91c1c}
+
+    @media(max-width:768px){
+      body{padding:8px}
+      .container{padding:12px}
+      .topbar{flex-direction:column;align-items:stretch}
+      .btn-group{flex-direction:column;align-items:stretch}
+      .form-row{flex-direction:column}
+      button,select,input{font-size:16px}
+      table{font-size:13px}
+      th,td{padding:8px}
+    }
+
+    @media(max-width:480px){
+      th,td{white-space:nowrap}
+      table{min-width:480px}
+      .card{overflow-x:auto}
+      button{width:100%}
+      .badge{margin-top:8px;align-self:flex-start}
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="brand">Development by Christian Sena</div>
     <div class="topbar">
-      <button class="ghost" id="darkModeBtn" type="button">🌙</button>
+      <button class="ghost" id="darkModeBtn" type="button" aria-pressed="false">🌙</button>
       <button id="btnExportExcel" class="primary">Exportar a Excel</button>
       <button id="btnImportExcel" class="secondary">Importar desde Excel</button>
       <input type="file" id="fileExcel" accept=".csv" style="display:none" />
@@ -43,6 +63,13 @@
     </div>
 
     <div class="card">
+      <label for="local">Local</label>
+      <select id="local">
+        <option value="pocitos">Sushi Time Pocitos</option>
+        <option value="carrasco">Sushi Time Carrasco</option>
+        <option value="lagomar">Sushi Time Lagomar</option>
+      </select>
+
       <label for="empleado">Empleado</label>
       <input type="text" id="empleado" placeholder="Nombre del empleado">
 
@@ -71,13 +98,13 @@
 
       <div class="btn-group">
         <button id="btnAgregar" class="primary">Agregar</button>
-        <button id="btnEditar" class="secondary" disabled>Guardar cambios</button>
+        <button id="btnLimpiarLocal" class="secondary">Limpiar local</button>
         <button id="btnVaciarTodo" class="ghost">Vaciar todo</button>
-        <span style="margin-left:auto" class="badge" id="countBadge">0 registros</span>
+        <span class="badge" id="countBadge">0 registros</span>
       </div>
     </div>
 
-    <h3 style="margin-top:18px">Registros en tiempo real</h3>
+    <h3 style="margin-top:18px">Registros en tiempo real — <span id="localLabel">Pocitos</span></h3>
     <div class="card">
       <table>
         <thead>
@@ -90,141 +117,33 @@
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDSxZILNH92QqkfnQeSpYZeboqylAo_6S0",
-      authDomain: "sushitime-b84fc.firebaseapp.com",
-      databaseURL: "https://sushitime-b84fc-default-rtdb.firebaseio.com",
-      projectId: "sushitime-b84fc",
-      storageBucket: "sushitime-b84fc.appspot.com",
-      messagingSenderId: "821112951317",
-      appId: "1:821112951317:web:489461e64376ed9daab41c",
-      measurementId: "G-JLLVJ1ZR67"
-    };
-
+    const firebaseConfig = { apiKey: "AIzaSyDSxZILNH92QqkfnQeSpYZeboqylAo_6S0", authDomain: "sushitime-b84fc.firebaseapp.com", databaseURL: "https://sushitime-b84fc-default-rtdb.firebaseio.com", projectId: "sushitime-b84fc", storageBucket: "sushitime-b84fc.appspot.com", messagingSenderId: "821112951317", appId: "1:821112951317:web:489461e64376ed9daab41c", measurementId: "G-JLLVJ1ZR67" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const empleado = document.getElementById('empleado');
-    const dia = document.getElementById('dia');
-    const entrada = document.getElementById('entrada');
-    const salida = document.getElementById('salida');
-    const btnAgregar = document.getElementById('btnAgregar');
-    const btnEditar = document.getElementById('btnEditar');
-    const btnVaciarTodo = document.getElementById('btnVaciarTodo');
-    const tabla = document.getElementById('tabla-registro');
-    const countBadge = document.getElementById('countBadge');
-    const totalHorasEl = document.getElementById('totalHoras');
+    const localSelect=document.getElementById('local');const localLabel=document.getElementById('localLabel');const empleado=document.getElementById('empleado');const dia=document.getElementById('dia');const entrada=document.getElementById('entrada');const salida=document.getElementById('salida');const btnAgregar=document.getElementById('btnAgregar');const btnLimpiarLocal=document.getElementById('btnLimpiarLocal');const btnVaciarTodo=document.getElementById('btnVaciarTodo');const btnExportExcel=document.getElementById('btnExportExcel');const btnImportExcel=document.getElementById('btnImportExcel');const fileExcel=document.getElementById('fileExcel');const tabla=document.getElementById('tabla-registro');const countBadge=document.getElementById('countBadge');const totalHorasEl=document.getElementById('totalHoras');
 
-    let editId = null;
+    function calcularSegundos(e,s){if(!e||!s)return 0;const t1=new Date('1970-01-01T'+e+':00');const t2=new Date('1970-01-01T'+s+':00');let diff=(t2-t1)/1000;if(diff<0)diff+=86400;return Math.round(diff)}
+    function formatHMS(seconds){const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${h}h ${m}m ${s}s`}
 
-    function calcularHoras(e, s){
-      if(!e || !s) return 0;
-      const t1 = new Date('1970-01-01T'+e+':00');
-      const t2 = new Date('1970-01-01T'+s+':00');
-      let diff = (t2 - t1)/1000;
-      if(diff < 0) diff += 86400;
-      return diff;
-    }
+    btnAgregar.addEventListener('click',()=>{const id=Date.now();const segs=calcularSegundos(entrada.value,salida.value);const registro={local:localSelect.value||'pocitos',empleado:empleado.value.trim(),dia:dia.value,entrada:entrada.value,salida:salida.value,segundos:segs};if(!registro.empleado){alert('Ingrese un nombre de empleado');return;}db.ref('registros/'+id).set(registro);empleado.value='';salida.value='';});
 
-    function formatHMS(seconds){
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      const s = seconds % 60;
-      return `${h}h ${m}m ${s}s`;
-    }
+    btnExportExcel.addEventListener('click',()=>{const selectedLocal=localSelect.value;db.ref('registros').once('value').then(snapshot=>{let csv='Empleado,Local,Día,Entrada,Salida,Horas\n';snapshot.forEach(child=>{const d=child.val();const recLocal=d.local||'pocitos';if(recLocal!==selectedLocal)return;const hours=((parseInt(d.segundos)||0)/3600).toFixed(2);csv+=`${d.empleado},${recLocal},${d.dia},${d.entrada},${d.salida},${hours}\n`;});const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`registros_${selectedLocal}.csv`;a.click();URL.revokeObjectURL(a.href);});});
 
-    btnAgregar.addEventListener('click', () => {
-      const id = Date.now();
-      const diff = calcularHoras(entrada.value, salida.value);
-      const registro = {
-        empleado: empleado.value.trim(),
-        dia: dia.value,
-        entrada: entrada.value,
-        salida: salida.value,
-        segundos: diff
-      };
-      if(!registro.empleado){ alert('Ingrese un nombre de empleado'); return; }
-      db.ref('registros/' + id).set(registro);
-      limpiarFormulario();
-    });
+    btnImportExcel.addEventListener('click',()=>fileExcel.click());
+    fileExcel.addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=function(ev){const lines=String(ev.target.result).split(/\r?\n/).filter(l=>l.trim());lines.slice(1).forEach(line=>{const cols=line.split(',');const emp=(cols[0]||'').trim();const loc=(cols[1]||localSelect.value||'pocitos').trim();const diaV=(cols[2]||'martes').trim();const ent=(cols[3]||'00:00').trim();const sal=(cols[4]||'00:00').trim();const hrs=parseFloat((cols[5]||'0').trim())||0;const segs=Math.round(hrs*3600);if(!emp)return;db.ref('registros/'+Date.now()+Math.floor(Math.random()*1000)).set({local:loc,empleado:emp,dia:diaV,entrada:ent,salida:sal,segundos:segs});});alert('Importación finalizada');};reader.readAsText(f);fileExcel.value=null;});
 
-    btnEditar.addEventListener('click', () => {
-      if(!editId) return;
-      const diff = calcularHoras(entrada.value, salida.value);
-      const registro = {
-        empleado: empleado.value.trim(),
-        dia: dia.value,
-        entrada: entrada.value,
-        salida: salida.value,
-        segundos: diff
-      };
-      db.ref('registros/' + editId).update(registro);
-      limpiarFormulario();
-    });
+    btnLimpiarLocal.addEventListener('click',()=>{const sel=localSelect.value;if(!confirm(`¿Limpiar registros del local ${sel}?`))return;db.ref('registros').once('value').then(snapshot=>{snapshot.forEach(child=>{const d=child.val();const recLocal=d.local||'pocitos';if(recLocal===sel)db.ref('registros/'+child.key).remove();});});});
 
-    db.ref('registros').on('value', snapshot => {
-      tabla.innerHTML = '';
-      let count = 0;
-      let total = 0;
-      snapshot.forEach(child => {
-        const data = child.val();
-        const id = child.key;
-        total += parseInt(data.segundos)||0;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${data.empleado}</td><td>${data.dia}</td><td>${data.entrada}</td><td>${data.salida}</td><td>${formatHMS(data.segundos)}</td>
-        <td>
-          <button class='action-btn edit-btn' onclick='editarRegistro("${id}")'>Editar</button>
-          <button class='action-btn del-btn' onclick='eliminarRegistro("${id}")'>Eliminar</button>
-        </td>`;
-        tabla.appendChild(tr);
-        count++;
-      });
-      countBadge.textContent = `${count} registros`;
-      totalHorasEl.textContent = formatHMS(total);
-    });
+    function renderForLocal(sel){localLabel.textContent=localSelect.options[localSelect.selectedIndex].text;tabla.innerHTML='';db.ref('registros').once('value').then(snapshot=>{let count=0;let total=0;snapshot.forEach(child=>{const d=child.val();const recLocal=d.local||'pocitos';if(recLocal!==sel)return;total+=parseInt(d.segundos)||0;const tr=document.createElement('tr');tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td><button class='action-btn edit-btn' onclick='editarRegistro("${child.key}")'>Editar</button><button class='action-btn del-btn' onclick='eliminarRegistro("${child.key}")'>Eliminar</button></td>`;tabla.appendChild(tr);count++;});countBadge.textContent=`${count} registros`;totalHorasEl.textContent=formatHMS(total);});}
 
-    function eliminarRegistro(id){
-      if(confirm('¿Seguro que deseas eliminar este registro?')){
-        db.ref('registros/'+id).remove();
-      }
-    }
-
-    function editarRegistro(id){
-      db.ref('registros/'+id).once('value').then(snap => {
-        const data = snap.val();
-        empleado.value = data.empleado;
-        dia.value = data.dia;
-        entrada.value = data.entrada;
-        salida.value = data.salida;
-        editId = id;
-        btnAgregar.disabled = true;
-        btnEditar.disabled = false;
-      });
-    }
-
-    btnVaciarTodo.addEventListener('click', ()=>{
-      if(confirm('¿Borrar todos los registros?')){
-        db.ref('registros').remove();
-      }
-    });
-
-    function limpiarFormulario(){
-      empleado.value = '';
-      entrada.value = '20:00';
-      salida.value = '';
-      editId = null;
-      btnAgregar.disabled = false;
-      btnEditar.disabled = true;
-    }
-
-    const darkBtn = document.getElementById('darkModeBtn');
-    darkBtn.addEventListener('click', ()=>{
-      const isDark = document.body.classList.toggle('dark');
-      darkBtn.textContent = isDark ? '☀️' : '🌙';
-    });
-
-    window.eliminarRegistro = eliminarRegistro;
-    window.editarRegistro = editarRegistro;
+    db.ref('registros').on('value',()=>renderForLocal(localSelect.value));
+    function eliminarRegistro(id){if(confirm('¿Seguro que deseas eliminar este registro?'))db.ref('registros/'+id).remove();}window.eliminarRegistro=eliminarRegistro;
+    function editarRegistro(id){db.ref('registros/'+id).once('value').then(snap=>{const d=snap.val();localSelect.value=d.local||'pocitos';empleado.value=d.empleado;dia.value=d.dia;entrada.value=d.entrada;salida.value=d.salida;});}window.editarRegistro=editarRegistro;
+    btnVaciarTodo.addEventListener('click',()=>{if(confirm('¿Borrar todos los registros?'))db.ref('registros').remove();});
+    localSelect.addEventListener('change',()=>renderForLocal(localSelect.value));
+    const darkBtn=document.getElementById('darkModeBtn');darkBtn.addEventListener('click',()=>{const isDark=document.body.classList.toggle('dark');darkBtn.textContent=isDark?'☀️':'🌙';darkBtn.setAttribute('aria-pressed',isDark);});
+    renderForLocal(localSelect.value);
   </script>
 </body>
 </html>
