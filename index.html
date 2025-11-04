@@ -4,14 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Horas — Sushi Time</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root { --primary:#6366f1; --secondary:#6b7280; --danger:#ef4444; --bg:#fafafa; --card:#ffffff; --radius:12px; --muted:#6b7280 }
     body{font-family:Inter, Arial, sans-serif;background:var(--bg);margin:0;padding:16px;color:#111827;transition:all .3s ease;}
     body.dark{background:#111827;color:#f3f4f6}
     .container{max-width:1050px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,0.05);padding:16px;}
-    .brand{text-align:center;font-size:18px;font-weight:bold;color:var(--primary);margin-bottom:10px;}
+    .brand{text-align:right;font-size:16px;font-weight:bold;color:var(--primary);margin-bottom:10px;}
     .topbar{display:flex;justify-content:flex-start;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}
     .topbar .spacer{flex:1}
     .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;overflow-x:auto}
@@ -30,36 +28,16 @@
     .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px;align-self:center}
     .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:13px}
     .edit-btn{background:#c7d2fe;color:#1e3a8a}.del-btn{background:#fee2e2;color:#b91c1c}
-
-    @media(max-width:768px){
-      body{padding:8px}
-      .container{padding:12px}
-      .topbar{flex-direction:column;align-items:stretch}
-      .btn-group{flex-direction:column;align-items:stretch}
-      .form-row{flex-direction:column}
-      button,select,input{font-size:16px}
-      table{font-size:13px}
-      th,td{padding:8px}
-    }
-
-    @media(max-width:480px){
-      th,td{white-space:nowrap}
-      table{min-width:480px}
-      .card{overflow-x:auto}
-      button{width:100%}
-      .badge{margin-top:8px;align-self:flex-start}
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="brand">Development by Christian Sena</div>
     <div class="topbar">
-      <button class="ghost" id="darkModeBtn" type="button" aria-pressed="false">🌙</button>
-      <button id="btnExportExcel" class="primary">Exportar a Excel</button>
-      <button id="btnImportExcel" class="secondary">Importar desde Excel</button>
-      <input type="file" id="fileExcel" accept=".csv" style="display:none" />
+      <button class="ghost" id="darkModeBtn" type="button">🌙</button>
+      <button id="btnExportar" class="primary">Exportar a Excel</button>
+      <button id="btnImportar" class="secondary">Importar desde Excel</button>
       <div class="spacer"></div>
+      <div class="brand">Development by Christian Sena</div>
     </div>
 
     <div class="card">
@@ -77,8 +55,7 @@
         <div>
           <label for="dia">Día</label>
           <select id="dia">
-            <option value="lunes">Lunes</option>
-            <option value="martes">Martes</option>
+            <option value="martes" selected>Martes</option>
             <option value="miercoles">Miércoles</option>
             <option value="jueves">Jueves</option>
             <option value="viernes">Viernes</option>
@@ -104,7 +81,7 @@
       </div>
     </div>
 
-    <h3 style="margin-top:18px">Registros en tiempo real — <span id="localLabel">Pocitos</span></h3>
+    <h3 style="margin-top:18px">Registros — <span id="localLabel">Pocitos</span></h3>
     <div class="card">
       <table>
         <thead>
@@ -116,34 +93,72 @@
     </div>
   </div>
 
-  <script>
-    const firebaseConfig = { apiKey: "AIzaSyDSxZILNH92QqkfnQeSpYZeboqylAo_6S0", authDomain: "sushitime-b84fc.firebaseapp.com", databaseURL: "https://sushitime-b84fc-default-rtdb.firebaseio.com", projectId: "sushitime-b84fc", storageBucket: "sushitime-b84fc.appspot.com", messagingSenderId: "821112951317", appId: "1:821112951317:web:489461e64376ed9daab41c", measurementId: "G-JLLVJ1ZR67" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+    import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-    const localSelect=document.getElementById('local');const localLabel=document.getElementById('localLabel');const empleado=document.getElementById('empleado');const dia=document.getElementById('dia');const entrada=document.getElementById('entrada');const salida=document.getElementById('salida');const btnAgregar=document.getElementById('btnAgregar');const btnLimpiarLocal=document.getElementById('btnLimpiarLocal');const btnVaciarTodo=document.getElementById('btnVaciarTodo');const btnExportExcel=document.getElementById('btnExportExcel');const btnImportExcel=document.getElementById('btnImportExcel');const fileExcel=document.getElementById('fileExcel');const tabla=document.getElementById('tabla-registro');const countBadge=document.getElementById('countBadge');const totalHorasEl=document.getElementById('totalHoras');
+    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSxZILNH92QqkfnQeSpYZeboqylAo_6S0",
+      authDomain: "sushitime-b84fc.firebaseapp.com",
+      databaseURL: "https://sushitime-b84fc-default-rtdb.firebaseio.com",
+      projectId: "sushitime-b84fc",
+      storageBucket: "sushitime-b84fc.firebasestorage.app",
+      messagingSenderId: "821112951317",
+      appId: "1:821112951317:web:489461e64376ed9daab41c",
+      measurementId: "G-JLLVJ1ZR67"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
+
+    const localSelect=document.getElementById('local');
+    const localLabel=document.getElementById('localLabel');
+    const empleado=document.getElementById('empleado');
+    const dia=document.getElementById('dia');
+    const entrada=document.getElementById('entrada');
+    const salida=document.getElementById('salida');
+    const btnAgregar=document.getElementById('btnAgregar');
+    const btnLimpiarLocal=document.getElementById('btnLimpiarLocal');
+    const btnVaciarTodo=document.getElementById('btnVaciarTodo');
+    const tabla=document.getElementById('tabla-registro');
+    const countBadge=document.getElementById('countBadge');
+    const totalHorasEl=document.getElementById('totalHoras');
 
     function calcularSegundos(e,s){if(!e||!s)return 0;const t1=new Date('1970-01-01T'+e+':00');const t2=new Date('1970-01-01T'+s+':00');let diff=(t2-t1)/1000;if(diff<0)diff+=86400;return Math.round(diff)}
     function formatHMS(seconds){const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${h}h ${m}m ${s}s`}
 
-    btnAgregar.addEventListener('click',()=>{const id=Date.now();const segs=calcularSegundos(entrada.value,salida.value);const registro={local:localSelect.value||'pocitos',empleado:empleado.value.trim(),dia:dia.value,entrada:entrada.value,salida:salida.value,segundos:segs};if(!registro.empleado){alert('Ingrese un nombre de empleado');return;}db.ref('registros/'+id).set(registro);empleado.value='';salida.value='';});
+    function render(sel){localLabel.textContent=localSelect.options[localSelect.selectedIndex].text;tabla.innerHTML='';get(ref(db,'registros')).then(snapshot=>{let count=0,total=0;snapshot.forEach(child=>{const d=child.val();if(d.local!==sel)return;total+=d.segundos;const tr=document.createElement('tr');tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td><button class='action-btn del-btn' data-id='${child.key}'>Eliminar</button></td>`;tabla.appendChild(tr);count++;});countBadge.textContent=`${count} registros`;totalHorasEl.textContent=formatHMS(total);});}
 
-    btnExportExcel.addEventListener('click',()=>{const selectedLocal=localSelect.value;db.ref('registros').once('value').then(snapshot=>{let csv='Empleado,Local,Día,Entrada,Salida,Horas\n';snapshot.forEach(child=>{const d=child.val();const recLocal=d.local||'pocitos';if(recLocal!==selectedLocal)return;const hours=((parseInt(d.segundos)||0)/3600).toFixed(2);csv+=`${d.empleado},${recLocal},${d.dia},${d.entrada},${d.salida},${hours}\n`;});const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`registros_${selectedLocal}.csv`;a.click();URL.revokeObjectURL(a.href);});});
+    function agregar(){const id=Date.now();const data={local:localSelect.value,empleado:empleado.value.trim(),dia:dia.value,entrada:entrada.value,salida:salida.value,segundos:calcularSegundos(entrada.value,salida.value)};if(!data.empleado)return alert('Ingrese nombre');set(ref(db,'registros/'+id),data).then(()=>{empleado.value='';salida.value='';render(localSelect.value);});}
 
-    btnImportExcel.addEventListener('click',()=>fileExcel.click());
-    fileExcel.addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=function(ev){const lines=String(ev.target.result).split(/\r?\n/).filter(l=>l.trim());lines.slice(1).forEach(line=>{const cols=line.split(',');const emp=(cols[0]||'').trim();const loc=(cols[1]||localSelect.value||'pocitos').trim();const diaV=(cols[2]||'martes').trim();const ent=(cols[3]||'00:00').trim();const sal=(cols[4]||'00:00').trim();const hrs=parseFloat((cols[5]||'0').trim())||0;const segs=Math.round(hrs*3600);if(!emp)return;db.ref('registros/'+Date.now()+Math.floor(Math.random()*1000)).set({local:loc,empleado:emp,dia:diaV,entrada:ent,salida:sal,segundos:segs});});alert('Importación finalizada');};reader.readAsText(f);fileExcel.value=null;});
+    function eliminar(id){if(confirm('¿Eliminar registro?'))remove(ref(db,'registros/'+id)).then(()=>render(localSelect.value));}
 
-    btnLimpiarLocal.addEventListener('click',()=>{const sel=localSelect.value;if(!confirm(`¿Limpiar registros del local ${sel}?`))return;db.ref('registros').once('value').then(snapshot=>{snapshot.forEach(child=>{const d=child.val();const recLocal=d.local||'pocitos';if(recLocal===sel)db.ref('registros/'+child.key).remove();});});});
+    function limpiarLocal(){const sel=localSelect.value;if(!confirm(`¿Limpiar ${sel}?`))return;get(ref(db,'registros')).then(snapshot=>{snapshot.forEach(child=>{const d=child.val();if(d.local===sel)remove(ref(db,'registros/'+child.key));});render(sel);});}
 
-    function renderForLocal(sel){localLabel.textContent=localSelect.options[localSelect.selectedIndex].text;tabla.innerHTML='';db.ref('registros').once('value').then(snapshot=>{let count=0;let total=0;snapshot.forEach(child=>{const d=child.val();const recLocal=d.local||'pocitos';if(recLocal!==sel)return;total+=parseInt(d.segundos)||0;const tr=document.createElement('tr');tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td><button class='action-btn edit-btn' onclick='editarRegistro("${child.key}")'>Editar</button><button class='action-btn del-btn' onclick='eliminarRegistro("${child.key}")'>Eliminar</button></td>`;tabla.appendChild(tr);count++;});countBadge.textContent=`${count} registros`;totalHorasEl.textContent=formatHMS(total);});}
+    function vaciarTodo(){if(confirm('¿Vaciar todo?'))remove(ref(db,'registros')).then(()=>render(localSelect.value));}
 
-    db.ref('registros').on('value',()=>renderForLocal(localSelect.value));
-    function eliminarRegistro(id){if(confirm('¿Seguro que deseas eliminar este registro?'))db.ref('registros/'+id).remove();}window.eliminarRegistro=eliminarRegistro;
-    function editarRegistro(id){db.ref('registros/'+id).once('value').then(snap=>{const d=snap.val();localSelect.value=d.local||'pocitos';empleado.value=d.empleado;dia.value=d.dia;entrada.value=d.entrada;salida.value=d.salida;});}window.editarRegistro=editarRegistro;
-    btnVaciarTodo.addEventListener('click',()=>{if(confirm('¿Borrar todos los registros?'))db.ref('registros').remove();});
-    localSelect.addEventListener('change',()=>renderForLocal(localSelect.value));
-    const darkBtn=document.getElementById('darkModeBtn');darkBtn.addEventListener('click',()=>{const isDark=document.body.classList.toggle('dark');darkBtn.textContent=isDark?'☀️':'🌙';darkBtn.setAttribute('aria-pressed',isDark);});
-    renderForLocal(localSelect.value);
+    async function exportarExcel(){const snapshot=await get(ref(db,'registros'));const data=[];snapshot.forEach(child=>{data.push(child.val())});const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Registros');XLSX.writeFile(wb,'registros.xlsx');}
+
+    async function importarExcel(e){const file=e.target.files[0];if(!file)return;const data=await file.arrayBuffer();const workbook=XLSX.read(data);const sheet=workbook.Sheets[workbook.SheetNames[0]];const json=XLSX.utils.sheet_to_json(sheet);json.forEach(r=>{const id=Date.now()+Math.random();set(ref(db,'registros/'+id),r)});alert('Importado correctamente');render(localSelect.value);}
+
+    btnAgregar.onclick=agregar;
+    btnLimpiarLocal.onclick=limpiarLocal;
+    btnVaciarTodo.onclick=vaciarTodo;
+    document.getElementById('btnExportar').onclick=exportarExcel;
+
+    const inputImport=document.createElement('input');inputImport.type='file';inputImport.accept='.xlsx';inputImport.onchange=importarExcel;
+    document.getElementById('btnImportar').onclick=()=>inputImport.click();
+
+    localSelect.onchange=()=>render(localSelect.value);
+    tabla.addEventListener('click',e=>{if(e.target.matches('.del-btn'))eliminar(e.target.dataset.id);});
+
+    const darkBtn=document.getElementById('darkModeBtn');darkBtn.onclick=()=>{const isDark=document.body.classList.toggle('dark');darkBtn.textContent=isDark?'☀️':'🌙';};
+
+    onValue(ref(db,'registros'),()=>render(localSelect.value));
   </script>
 </body>
 </html>
