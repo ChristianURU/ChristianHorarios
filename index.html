@@ -1,1 +1,342 @@
-sdasd
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Horas — Sushi Time</title>
+  <style>
+    :root { --primary:#6366f1; --secondary:#6b7280; --danger:#ef4444; --bg:#fafafa; --card:#ffffff; --radius:12px; --muted:#6b7280 }
+    /* Base */
+    html,body{height:100%;}
+    body{font-family:Inter, Arial, sans-serif;background:var(--bg);margin:0;padding:24px;color:#111827;transition:background 0.3s,color 0.3s}
+    body.dark{background:#111827;color:#f3f4f6}
+    .container{max-width:1050px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,0.05);padding:24px;transition:background 0.3s,color 0.3s}
+
+    /* Top / utilities */
+    .brand{ text-align:center; font-size:18px; font-weight:bold; color:var(--primary); margin-bottom:10px; text-shadow:0 0 5px rgba(99,102,241,0.4); animation:fadeIn 1s ease-in-out; }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
+
+    .topbar{display:flex;justify-content:flex-start;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+    .topbar .spacer{flex:1}
+
+    .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;transition:background 0.3s}
+    body.dark .card{background:#1f2937;border-color:#374151;color:#f9fafb}
+
+    label{display:block;font-size:14px;color:var(--muted);margin-top:10px}
+    input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e5e7eb;margin-top:4px;font-size:14px;box-sizing:border-box}
+    body.dark input,body.dark select{background:#4b5563;color:#fff;border-color:#6b7280}
+
+    .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+    .form-row > div{flex:1;min-width:0}
+
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    button{padding:8px 12px;border-radius:8px;border:0;color:#fff;cursor:pointer;transition:background 0.3s}
+    button.primary{background:var(--primary)}button.secondary{background:var(--secondary)}button.ghost{background:transparent;color:var(--primary);border:1px solid #d1d5db}
+
+    table{width:100%;border-collapse:collapse;margin-top:14px}
+    th,td{border-bottom:1px solid #e5e7eb;padding:10px;font-size:14px}
+    th{background:#f9fafb;color:var(--muted);text-align:left}
+    tfoot td{font-weight:bold;background:#fafafa}
+
+    .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px}
+    .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer}
+    .edit-btn{background:#e9d5ff;color:var(--primary)}.del-btn{background:#f3f4f6;color:var(--secondary)}
+
+    /* Responsive helpers */
+    .table-wrap{overflow:auto}
+
+    /* Small screens */
+    @media (max-width: 900px){
+      .container{padding:16px}
+      .brand{font-size:16px}
+      .form-row{gap:10px}
+      th,td{padding:8px;font-size:13px}
+    }
+
+    @media (max-width:700px){
+      body{padding:12px}
+      .container{padding:12px;border-radius:10px}
+      .topbar{align-items:center}
+      .topbar .spacer{display:none}
+      .form-row{flex-direction:column}
+      .btn-group{flex-direction:column;align-items:stretch}
+      button{width:100%}
+      .badge{margin-top:8px}
+      /* Make tables horizontally scrollable on small screens */
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+      table{min-width:700px}
+      th,td{white-space:nowrap}
+    }
+
+    /* Very small devices */
+    @media (max-width:360px){
+      label{font-size:13px}
+      input,select{font-size:13px;padding:8px}
+      .brand{font-size:14px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">Development by Christian Sena</div>
+
+    <div class="topbar">
+      <button class="ghost" id="darkModeBtn" type="button" aria-pressed="false">🌙</button>
+      <button class="primary" id="btnExportExcel" type="button">Exportar a Excel</button>
+      <button class="secondary" id="btnImportExcel" type="button">Importar desde Excel</button>
+      <div class="spacer"></div>
+      <input id="fileExcel" type="file" accept=".csv, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display:none">
+    </div>
+
+    <div class="card" role="region" aria-label="Formulario de registro">
+      <label for="local">Local</label>
+      <select id="local">
+        <option value="pocitos">Sushi Time Pocitos</option>
+        <option value="carrasco">Sushi Time Carrasco</option>
+        <option value="lagomar">Sushi Time Lagomar</option>
+      </select>
+
+      <div class="form-row" style="margin-top:8px">
+        <div>
+          <label for="empleado">Empleado</label>
+          <input type="text" id="empleado" placeholder="Nombre del empleado">
+        </div>
+        <div>
+          <label for="dia">Día</label>
+          <select id="dia">
+            <option value="martes">Martes</option>
+            <option value="miercoles">Miércoles</option>
+            <option value="jueves">Jueves</option>
+            <option value="viernes">Viernes</option>
+            <option value="sabado">Sábado</option>
+            <option value="domingo">Domingo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="entrada">Hora de entrada</label>
+          <input type="time" id="entrada" value="20:00">
+        </div>
+        <div>
+          <label for="salida">Hora de salida</label>
+          <input type="time" id="salida">
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button id="btnAgregar" class="primary" type="button">Agregar</button>
+        <button id="btnLimpiarLocal" class="secondary" type="button">Limpiar local</button>
+        <button id="btnVaciarTodo" class="ghost" type="button">Vaciar todo</button>
+        <span style="margin-left:auto" class="badge" id="countBadge">0 registros</span>
+      </div>
+    </div>
+
+    <h3 style="margin-top:18px">Registros — <span id="localLabel">Pocitos</span></h3>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr><th>Empleado</th><th>Día</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Acciones</th></tr>
+        </thead>
+        <tbody id="tabla-registro"></tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:18px">Resumen por empleado</h3>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Empleado</th><th>Horas Totales</th><th>Entradas</th></tr></thead>
+        <tbody id="tabla-resumen"></tbody>
+        <tfoot><tr><td>Total</td><td id="total-horas">0.00</td><td></td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', ()=>{
+    // --- Keep original storage/logic but fix potential missing initialization and small robustness updates ---
+    const STORAGE_KEY = 'registro_horas_v1';
+    let locales = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
+    if(!locales.pocitos) locales = {pocitos:{},carrasco:{},lagomar:{}};
+    let localActual = 'pocitos';
+    let editIndex = -1;
+
+    function guardar(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(locales)); }
+
+    function calcularHoras(e,s){
+      if(!e||!s) return 0;
+      const t1 = new Date('1970-01-01T'+e+':00');
+      const t2 = new Date('1970-01-01T'+s+':00');
+      let diff = (t2 - t1)/3600000; if(diff < 0) diff += 24; return diff;
+    }
+
+    function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#039;'}[c])); }
+
+    function formatHMS(totalHoras){
+      const totalSeconds = Math.round(totalHoras * 3600);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return `${h}h ${m}m ${s}s`;
+    }
+
+    // Dark mode toggle and persistence
+    const darkBtn = document.getElementById('darkModeBtn');
+    const savedDark = localStorage.getItem('st_dark_mode') === '1';
+    if(savedDark) { document.body.classList.add('dark'); darkBtn.textContent = '☀️'; darkBtn.setAttribute('aria-pressed','true'); }
+    darkBtn.addEventListener('click', ()=>{
+      const on = document.body.classList.toggle('dark');
+      darkBtn.textContent = on ? '☀️' : '🌙';
+      darkBtn.setAttribute('aria-pressed', on? 'true' : 'false');
+      localStorage.setItem('st_dark_mode', on ? '1' : '0');
+    });
+
+    // Export current local registros to CSV (Excel)
+    document.getElementById('btnExportExcel').addEventListener('click', ()=>{
+      const registros = locales[localActual].registros || [];
+      if(!registros.length){ alert('No hay datos para exportar'); return; }
+      const lines = ['Empleado,Día,Entrada,Salida,Horas'];
+      registros.forEach(r=> lines.push([r.empleado, r.dia, r.entrada, r.salida, r.horas.toFixed(2)].map(v=> '"'+String(v).replace(/\"/g,'""')+'"').join(',')));
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `registro_${localActual}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // Import CSV: open file dialog
+    document.getElementById('btnImportExcel').addEventListener('click', ()=>{
+      document.getElementById('fileExcel').value = null; // reset
+      document.getElementById('fileExcel').click();
+    });
+
+    function parseCsv(text){
+      const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+      const out = [];
+      for(let i=1;i<lines.length;i++){
+        const line = lines[i];
+        const cols = [];
+        let cur = '', inQ = false;
+        for(let j=0;j<line.length;j++){
+          const ch = line[j];
+          if(inQ){ if(ch==='"' && line[j+1]==='"'){ cur+='"'; j++; } else if(ch==='"'){ inQ=false; } else cur+=ch; }
+          else { if(ch==='"'){ inQ=true; } else if(ch===','){ cols.push(cur); cur=''; } else cur+=ch; }
+        }
+        cols.push(cur);
+        out.push(cols);
+      }
+      return out;
+    }
+
+    document.getElementById('fileExcel').addEventListener('change', function(e){
+      const f = e.target.files && e.target.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        try{
+          const rows = parseCsv(String(ev.target.result));
+          if(!locales[localActual].registros) locales[localActual].registros = [];
+          rows.forEach(cols=>{
+            const empleado = (cols[0]||'').trim();
+            const dia = (cols[1]||'').trim() || 'martes';
+            const entrada = (cols[2]||'').trim() || '20:00';
+            const salida = (cols[3]||'').trim() || '';
+            const horasNum = parseFloat((cols[4]||'').replace(',','.'));
+            const horas = isNaN(horasNum) ? calcularHoras(entrada, salida) : horasNum;
+            if(!empleado) return;
+            locales[localActual].registros.push({empleado,dia,entrada,salida,horas});
+            if(!locales[localActual].resumen) locales[localActual].resumen = {};
+            if(!locales[localActual].resumen[empleado]) locales[localActual].resumen[empleado] = {horas:0,count:0};
+            locales[localActual].resumen[empleado].horas += horas; locales[localActual].resumen[empleado].count += 1;
+          });
+          guardar(); render(); alert('Importación finalizada');
+        }catch(err){ alert('Error leyendo el archivo: '+err.message); }
+      };
+      reader.onerror = function(){ alert('Error leyendo el archivo'); };
+      reader.readAsText(f);
+    });
+
+    function render(){
+      const registros = (locales[localActual] && locales[localActual].registros) ? locales[localActual].registros : [];
+      const tbody = document.getElementById('tabla-registro');
+      const resumen = {};
+      tbody.innerHTML = '';
+      registros.forEach((r,i)=>{
+        const tr = document.createElement('tr');
+        tr.dataset.index = i;
+        tr.innerHTML = `<td>${escapeHtml(r.empleado)}</td><td>${escapeHtml(r.dia)}</td><td>${r.entrada}</td><td>${r.salida}</td><td>${r.horas.toFixed(2)}</td>`;
+        const tdActions = document.createElement('td');
+        const btnEdit = document.createElement('button'); btnEdit.className = 'action-btn edit-btn'; btnEdit.type = 'button'; btnEdit.setAttribute('data-action','edit'); btnEdit.textContent = 'Editar';
+        const btnDel = document.createElement('button'); btnDel.className = 'action-btn del-btn'; btnDel.type = 'button'; btnDel.setAttribute('data-action','delete'); btnDel.textContent = 'Eliminar';
+        tdActions.appendChild(btnEdit); tdActions.appendChild(document.createTextNode(' ')); tdActions.appendChild(btnDel);
+        tr.appendChild(tdActions); tbody.appendChild(tr);
+        if(!resumen[r.empleado]) resumen[r.empleado] = {horas:0,count:0}; resumen[r.empleado].horas += r.horas; resumen[r.empleado].count++;
+      });
+
+      const resBody = document.getElementById('tabla-resumen'); resBody.innerHTML = '';
+      let total = 0;
+      Object.keys(resumen).forEach(emp=>{
+        const r = resumen[emp]; total += r.horas;
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${escapeHtml(emp)}</td><td>${formatHMS(r.horas)}</td><td>${r.count}</td>`;
+        resBody.appendChild(row);
+      });
+      document.getElementById('total-horas').textContent = formatHMS(total);
+      document.getElementById('countBadge').textContent = registros.length + ' registros';
+    }
+
+    function agregar(){
+      const empleado = document.getElementById('empleado').value.trim();
+      const dia = document.getElementById('dia').value;
+      const entrada = document.getElementById('entrada').value;
+      const salida = document.getElementById('salida').value;
+      if(!empleado){ alert('Ingrese empleado'); return; }
+      const horas = calcularHoras(entrada, salida);
+      if(editIndex >= 0){
+        const antiguo = locales[localActual].registros[editIndex];
+        if(locales[localActual].resumen && locales[localActual].resumen[antiguo.empleado]){
+          locales[localActual].resumen[antiguo.empleado].horas -= antiguo.horas;
+          locales[localActual].resumen[antiguo.empleado].count -= 1;
+          if(locales[localActual].resumen[antiguo.empleado].count <= 0) delete locales[localActual].resumen[antiguo.empleado];
+        }
+        locales[localActual].registros[editIndex] = { empleado,dia,entrada,salida,horas };
+        if(!locales[localActual].resumen) locales[localActual].resumen = {};
+        if(!locales[localActual].resumen[empleado]) locales[localActual].resumen[empleado] = {horas:0,count:0};
+        locales[localActual].resumen[empleado].horas += horas; locales[localActual].resumen[empleado].count += 1;
+        editIndex = -1; document.getElementById('btnAgregar').textContent = 'Agregar'; document.getElementById('empleado').value = ''; document.getElementById('entrada').value = '20:00'; document.getElementById('salida').value = ''; guardar(); render(); return;
+      }
+      if(!locales[localActual].registros) locales[localActual].registros = [];
+      locales[localActual].registros.push({empleado,dia,entrada,salida,horas});
+      if(!locales[localActual].resumen) locales[localActual].resumen = {};
+      if(!locales[localActual].resumen[empleado]) locales[localActual].resumen[empleado] = {horas:0,count:0};
+      locales[localActual].resumen[empleado].horas += horas; locales[localActual].resumen[empleado].count += 1;
+      document.getElementById('empleado').value = ''; document.getElementById('entrada').value = '20:00'; document.getElementById('salida').value = ''; guardar(); render();
+    }
+
+    function editarRegistro(i){ const item = locales[localActual].registros[i]; if(!item) return; document.getElementById('empleado').value = item.empleado; document.getElementById('dia').value = item.dia; document.getElementById('entrada').value = item.entrada; document.getElementById('salida').value = item.salida; editIndex = i; document.getElementById('btnAgregar').textContent = 'Guardar cambios'; }
+
+    function eliminarIndex(i){ if(!confirm('¿Eliminar registro?')) return; if(!locales[localActual].registros) return; const removed = locales[localActual].registros.splice(i,1)[0]; if(locales[localActual].resumen && removed){ const emp = removed.empleado; if(locales[localActual].resumen[emp]){ locales[localActual].resumen[emp].horas -= removed.horas; locales[localActual].resumen[emp].count -= 1; if(locales[localActual].resumen[emp].count <= 0) delete locales[localActual].resumen[emp]; } } guardar(); render(); }
+
+    const tbodyEl = document.getElementById('tabla-registro');
+    tbodyEl.addEventListener('click', function(e){ const btn = e.target.closest('button[data-action]'); if(!btn) return; const tr = btn.closest('tr'); if(!tr) return; const idx = Number(tr.dataset.index); const action = btn.getAttribute('data-action'); if(action === 'delete') eliminarIndex(idx); if(action === 'edit') editarRegistro(idx); });
+
+    function limpiarLocal(){ if(!confirm('¿Limpiar registros de este local?')) return; locales[localActual].registros = []; locales[localActual].resumen = {}; guardar(); render(); }
+    function vaciarTodo(){ if(!confirm('¿Eliminar todos los datos?')) return; locales = {pocitos:{},carrasco:{},lagomar:{}}; guardar(); render(); }
+
+    document.getElementById('btnAgregar').addEventListener('click', agregar);
+    document.getElementById('btnLimpiarLocal').addEventListener('click', limpiarLocal);
+    document.getElementById('btnVaciarTodo').addEventListener('click', vaciarTodo);
+    document.getElementById('local').addEventListener('change', e=>{ localActual = e.target.value; document.getElementById('localLabel').textContent = e.target.options[e.target.selectedIndex].text; render(); });
+
+    // --- Optional lightweight anti-tamper messaging (non-blocking) ---
+    (function antiTamper(){
+      try{
+        document.addEventListener('contextmenu', function(e){ /* allow but show gentle message */ if(window.matchMedia('(max-width:700px)').matches) return; e.preventDefault(); try{ alert('Protección: edición no permitida en versión pública.'); }catch(_){}});
+        document.addEventListener('keydown', function(e){ const key = (e.key||'').toUpperCase(); if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(key)) || (e.ctrlKey && key === 'U')){ e.preventDefault(); try{ alert('Protección: ciertas combinaciones no están permitidas aquí.'); }catch(_){}}});
+      }catch(_){ }
+    })();
+
+    render();
+  });
+  </script>
+</body>
+</html>
+
