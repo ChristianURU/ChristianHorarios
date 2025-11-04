@@ -28,9 +28,9 @@
     body.dark button.ghost{color:#f3f4f6;border-color:#4b5563;}
     table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;min-width:600px}
     th,td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:left}
-    th{background:#f9fafb;color:var(--muted)}
+    th{background:#f9fafb;color:#muted}
     body.dark th{background:#1f2937;color:#9ca3af;}
-    .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px;align-self:center}
+    .badge{background:rgba(99,102,241,0.1);color:#6366f1;font-size:12px;padding:4px 8px;border-radius:999px;align-self:center}
     .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:13px}
     .edit-btn{background:#c7d2fe;color:#1e3a8a}.del-btn{background:#fee2e2;color:#b91c1c}
     footer.status{position:relative;margin:20px auto 0 auto;display:inline-flex;gap:20px;align-items:center;justify-content:center;background:var(--card);padding:8px 14px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.05);font-size:14px;color:var(--muted);transition:background .3s ease;}
@@ -46,6 +46,7 @@
       <button class="ghost" id="darkModeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
       <button id="btnExportar" class="primary">Exportar a Excel</button>
       <button id="btnImportar" class="secondary">Importar desde Excel</button>
+      <input type="file" id="fileExcel" accept=".csv" style="display:none">
       <button id="btnAdmin" class="ghost">Cpanel Administrador</button>
       <div class="spacer"></div>
       <div class="brand">Development by Christian Sena</div>
@@ -111,7 +112,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getDatabase, ref, set, get, child, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+    import { getDatabase, ref, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDSxZILNH92QqkfnQeSpYZeboqylAo_6S0",
@@ -127,92 +128,45 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ELEMENTOS
-    const btnAdmin = document.getElementById('btnAdmin');
-    const btnAgregar = document.getElementById('btnAgregar');
-    const btnLimpiarLocal = document.getElementById('btnLimpiarLocal');
-    const btnVaciarTodo = document.getElementById('btnVaciarTodo');
+    const btnExportar = document.getElementById('btnExportar');
+    const btnImportar = document.getElementById('btnImportar');
+    const fileExcel = document.getElementById('fileExcel');
     const localSelect = document.getElementById('local');
-    const empleado = document.getElementById('empleado');
-    const dia = document.getElementById('dia');
-    const entrada = document.getElementById('entrada');
-    const salida = document.getElementById('salida');
-    const tabla = document.getElementById('tabla-registro');
-    const countBadge = document.getElementById('countBadge');
-    const totalHorasEl = document.getElementById('totalHoras');
-    const localLabel = document.getElementById('localLabel');
 
-    let adminUnlocked = false;
-    const ADMIN_PASSWORD = '1234';
-
-    btnAdmin.addEventListener('click', () => {
-      if(adminUnlocked){alert('Panel administrador ya activo.');return;}
-      const pass = prompt('Ingrese la contraseña de administrador:');
-      if(pass === ADMIN_PASSWORD){
-        adminUnlocked = true;
-        alert('Panel administrador desbloqueado');
-      } else {
-        alert('Contraseña incorrecta');
-      }
-    });
-
-    function calcularSegundos(e,s){if(!e||!s)return 0;const t1=new Date('1970-01-01T'+e+':00');const t2=new Date('1970-01-01T'+s+':00');let diff=(t2-t1)/1000;if(diff<0)diff+=86400;return Math.round(diff)}
-    function formatHMS(seconds){const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${h}h ${m}m ${s}s`}
-
-    btnAgregar.addEventListener('click', ()=>{
-      if(!adminUnlocked){alert('Debe desbloquear el panel administrador primero.');return;}
-      const id = Date.now();
-      const segs = calcularSegundos(entrada.value, salida.value);
-      const registro = {local:localSelect.value, empleado:empleado.value.trim(), dia:dia.value, entrada:entrada.value, salida:salida.value, segundos:segs};
-      if(!registro.empleado){alert('Ingrese un nombre de empleado');return;}
-      set(ref(db, 'registros/'+id), registro);
-      empleado.value=''; salida.value='';
-    });
-
-    btnLimpiarLocal.addEventListener('click', ()=>{
-      if(!adminUnlocked){alert('Debe desbloquear el panel administrador primero.');return;}
+    btnExportar.addEventListener('click', async ()=>{
       const sel = localSelect.value;
-      if(!confirm(`¿Limpiar registros del local ${sel}?`))return;
-      get(ref(db, 'registros')).then(snap=>{
-        snap.forEach(childSnap=>{
-          if(childSnap.val().local===sel){remove(ref(db, 'registros/'+childSnap.key));}
-        });
+      const snapshot = await get(ref(db, 'registros'));
+      let csv = 'Empleado,Local,Día,Entrada,Salida,Horas\n';
+      snapshot.forEach(child=>{
+        const d = child.val();
+        if(d.local!==sel) return;
+        const horas = (d.segundos/3600).toFixed(2);
+        csv += `${d.empleado},${d.local},${d.dia},${d.entrada},${d.salida},${horas}\n`;
       });
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `registros_${sel}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
     });
 
-    btnVaciarTodo.addEventListener('click', ()=>{
-      if(!adminUnlocked){alert('Debe desbloquear el panel administrador primero.');return;}
-      if(confirm('¿Borrar todos los registros?'))remove(ref(db,'registros'));
-    });
+    btnImportar.addEventListener('click', ()=>fileExcel.click());
 
-    function renderForLocal(sel){
-      localLabel.textContent = localSelect.options[localSelect.selectedIndex].text;
-      get(ref(db,'registros')).then(snapshot=>{
-        tabla.innerHTML='';
-        let count=0; let total=0;
-        snapshot.forEach(child=>{
-          const d=child.val();
-          if(d.local!==sel)return;
-          total+=parseInt(d.segundos)||0;
-          const tr=document.createElement('tr');
-          tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td><button class='action-btn del-btn' data-id='${child.key}'>Eliminar</button></td>`;
-          tabla.appendChild(tr);
-          count++;
+    fileExcel.addEventListener('change', e=>{
+      const f = e.target.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = e2=>{
+        const lines = e2.target.result.split(/\r?\n/).filter(l=>l.trim());
+        lines.slice(1).forEach(line=>{
+          const [emp, loc, diaV, ent, sal, hrs] = line.split(',');
+          const segundos = Math.round(parseFloat(hrs||0)*3600);
+          if(emp) set(ref(db, 'registros/'+Date.now()+Math.floor(Math.random()*1000)), {local: loc||sel, empleado: emp, dia: diaV, entrada: ent, salida: sal, segundos});
         });
-        countBadge.textContent=`${count} registros`;
-        totalHorasEl.textContent=formatHMS(total);
-      });
-    }
-
-    localSelect.addEventListener('change', ()=>renderForLocal(localSelect.value));
-    onValue(ref(db,'registros'),()=>renderForLocal(localSelect.value));
-
-    tabla.addEventListener('click', e=>{
-      if(e.target.classList.contains('del-btn')){
-        if(!adminUnlocked){alert('Debe desbloquear el panel administrador primero.');return;}
-        const id=e.target.getAttribute('data-id');
-        if(confirm('¿Eliminar registro?'))remove(ref(db,'registros/'+id));
-      }
+        alert('Importación completada');
+      };
+      reader.readAsText(f);
     });
 
     // Tema oscuro
@@ -221,7 +175,6 @@
       const isDark=document.body.classList.toggle('dark');
       darkModeBtn.innerHTML=isDark?'<i class="fa-solid fa-sun"></i>':'<i class="fa-solid fa-moon"></i>';
     });
-
   </script>
 </body>
 </html>
