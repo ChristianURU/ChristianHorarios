@@ -28,6 +28,11 @@
     .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px;align-self:center}
     .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:13px}
     .edit-btn{background:#c7d2fe;color:#1e3a8a}.del-btn{background:#fee2e2;color:#b91c1c}
+    footer.status{position:relative;margin:20px auto 0 auto;display:inline-flex;gap:20px;align-items:center;justify-content:center;background:var(--card);padding:8px 14px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.05);font-size:14px;color:var(--muted)}
+    body.dark footer.status{background:#0f1724;color:#cbd5e1}
+    .status .online{color:#16a34a;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+    .status .online::before{content:'';width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;animation:blink 1s linear infinite}
+    @keyframes blink{0%,50%{opacity:1;transform:scale(1)}51%,100%{opacity:0.25;transform:scale(0.9)}}
   </style>
 </head>
 <body>
@@ -92,6 +97,11 @@
         <tfoot><tr><td><strong>Total</strong></td><td colspan="3"></td><td id="totalHoras">0h 0m 0s</td><td></td></tr></tfoot>
       </table>
     </div>
+
+    <footer class="status" role="status" aria-live="polite">
+      <div><span>Current status Server :</span> <span class="online" id="serverStatus">Online</span></div>
+      <div><span>Current status Firebase :</span> <span class="online" id="firebaseStatus">Online</span></div>
+    </footer>
   </div>
 
   <script type="module">
@@ -125,9 +135,13 @@
     const btnLimpiarLocal=document.getElementById('btnLimpiarLocal');
     const btnVaciarTodo=document.getElementById('btnVaciarTodo');
     const btnAdmin=document.getElementById('btnAdmin');
+    const btnExportar=document.getElementById('btnExportar');
+    const btnImportar=document.getElementById('btnImportar');
     const tabla=document.getElementById('tabla-registro');
     const countBadge=document.getElementById('countBadge');
     const totalHorasEl=document.getElementById('totalHoras');
+    const serverStatusEl=document.getElementById('serverStatus');
+    const firebaseStatusEl=document.getElementById('firebaseStatus');
 
     const ADMIN_PASSWORD = '1234';
     let autorizado = sessionStorage.getItem('autorizado') === 'true';
@@ -144,121 +158,137 @@
       }
     }
 
-    btnAdmin.onclick = pedirContraseña;
+    btnAdmin.addEventListener('click', pedirContraseña);
 
     function calcularSegundos(e,s){if(!e||!s)return 0;const t1=new Date('1970-01-01T'+e+':00');const t2=new Date('1970-01-01T'+s+':00');let diff=(t2-t1)/1000;if(diff<0)diff+=86400;return Math.round(diff)}
     function formatHMS(seconds){const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${h}h ${m}m ${s}s`}
 
-    function render(sel){
+    // Renderiza la tabla para el local seleccionado
+    async function render(sel){
       localLabel.textContent=localSelect.options[localSelect.selectedIndex].text;
       tabla.innerHTML='';
-      get(ref(db,'registros')).then(snapshot=>{
+      try{
+        const snapshot = await get(ref(db,'registros'));
         let count=0,total=0;
         snapshot.forEach(child=>{
           const d=child.val();
-          if(d.local!==sel)return;
-          total+=d.segundos;
-          const tr=document.createElement('tr');
-          tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td>${autorizado ? `<button class='action-btn edit-btn' data-id='${child.key}'>Editar</button> <button class='action-btn del-btn' data-id='${child.key}'>Eliminar</button>` : ''}</td>`;
+          if(d.local!==sel) return;
+          total += parseInt(d.segundos)||0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td>${autorizado?`<button class='action-btn edit-btn' data-id='${child.key}'>Editar</button> <button class='action-btn del-btn' data-id='${child.key}'>Eliminar</button>`:''}</td>`;
           tabla.appendChild(tr);
           count++;
         });
-        countBadge.textContent=`${count} registros`;
-        totalHorasEl.textContent=formatHMS(total);
-      });
+        countBadge.textContent = `${count} registros`;
+        totalHorasEl.textContent = formatHMS(total);
+        serverStatusEl.textContent = 'Online';
+        firebaseStatusEl.textContent = 'Online';
+      }catch(err){
+        serverStatusEl.textContent = 'Offline';
+        firebaseStatusEl.textContent = 'Offline';
+        console.error(err);
+      }
     }
 
+    // Agregar registro (requiere autorización)
     function agregar(){
-      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
-      const id=Date.now();
-      const data={local:localSelect.value,empleado:empleado.value.trim(),dia:dia.value,entrada:entrada.value,salida:salida.value,segundos:calcularSegundos(entrada.value,salida.value)};
-      if(!data.empleado)return alert('Ingrese nombre');
+      if(!autorizado) return alert('Debe ingresar al Cpanel de administrador');
+      const id = Date.now();
+      const data = { local: localSelect.value, empleado: empleado.value.trim(), dia: dia.value, entrada: entrada.value, salida: salida.value, segundos: calcularSegundos(entrada.value, salida.value) };
+      if(!data.empleado) return alert('Ingrese nombre');
       set(ref(db,'registros/'+id),data).then(()=>{empleado.value='';salida.value='';render(localSelect.value);});
     }
 
-    function editar(id){
-      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
-      get(ref(db,'registros/'+id)).then(snap=>{
-        const d=snap.val();
-        if(!d)return;
-        const nuevaEntrada=prompt('Nueva hora de entrada',d.entrada);
-        const nuevaSalida=prompt('Nueva hora de salida',d.salida);
-        if(!nuevaEntrada||!nuevaSalida)return;
-        const nuevosSegundos=calcularSegundos(nuevaEntrada,nuevaSalida);
-        update(ref(db,'registros/'+id),{entrada:nuevaEntrada,salida:nuevaSalida,segundos:nuevosSegundos}).then(()=>render(localSelect.value));
-      });
+    // Editar registro (prompt) - requiere autorización
+    async function editar(id){
+      if(!autorizado) return alert('Debe ingresar al Cpanel de administrador');
+      const snap = await get(ref(db,'registros/'+id));
+      const d = snap.val();
+      if(!d) return alert('Registro no encontrado');
+      const nuevaEntrada = prompt('Nueva hora de entrada', d.entrada);
+      const nuevaSalida = prompt('Nueva hora de salida', d.salida);
+      if(!nuevaEntrada || !nuevaSalida) return;
+      const nuevosSegundos = calcularSegundos(nuevaEntrada, nuevaSalida);
+      await update(ref(db,'registros/'+id), { entrada: nuevaEntrada, salida: nuevaSalida, segundos: nuevosSegundos });
+      render(localSelect.value);
     }
 
+    // Eliminar registro
     function eliminar(id){
-      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
-      if(confirm('¿Eliminar registro?'))remove(ref(db,'registros/'+id)).then(()=>render(localSelect.value));
+      if(!autorizado) return alert('Debe ingresar al Cpanel de administrador');
+      if(confirm('¿Eliminar registro?')) remove(ref(db,'registros/'+id)).then(()=>render(localSelect.value));
     }
 
-    function limpiarLocal(){
-      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
-      const sel=localSelect.value;
-      if(!confirm(`¿Limpiar ${sel}?`))return;
-      get(ref(db,'registros')).then(snapshot=>{
-        snapshot.forEach(child=>{
-          const d=child.val();
-          if(d.local===sel)remove(ref(db,'registros/'+child.key));
-        });
-        render(sel);
+    // Limpiar local
+    async function limpiarLocal(){
+      if(!autorizado) return alert('Debe ingresar al Cpanel de administrador');
+      const sel = localSelect.value;
+      if(!confirm(`¿Limpiar ${sel}?`)) return;
+      const snapshot = await get(ref(db,'registros'));
+      snapshot.forEach(child=>{
+        const d = child.val();
+        if(d.local === sel) remove(ref(db,'registros/'+child.key));
       });
+      render(sel);
     }
 
+    // Vaciar todo
     function vaciarTodo(){
-      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
-      if(confirm('¿Vaciar todo?'))remove(ref(db,'registros')).then(()=>render(localSelect.value));
+      if(!autorizado) return alert('Debe ingresar al Cpanel de administrador');
+      if(confirm('¿Vaciar todo?')) remove(ref(db,'registros')).then(()=>render(localSelect.value));
     }
 
+    // Exportar Excel
     async function exportarExcel(){
-      const snapshot=await get(ref(db,'registros'));
-      const data=[];
-      snapshot.forEach(child=>{data.push(child.val())});
-      const ws=XLSX.utils.json_to_sheet(data);
-      const wb=XLSX.utils.book_new();
+      const snapshot = await get(ref(db,'registros'));
+      const data = [];
+      snapshot.forEach(child=>{ data.push(child.val()); });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb,ws,'Registros');
       XLSX.writeFile(wb,'registros.xlsx');
     }
 
+    // Importar Excel (solo autorizado)
     async function importarExcel(e){
-      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
-      const file=e.target.files[0];
-      if(!file)return;
-      const data=await file.arrayBuffer();
-      const workbook=XLSX.read(data);
-      const sheet=workbook.Sheets[workbook.SheetNames[0]];
-      const json=XLSX.utils.sheet_to_json(sheet);
-      json.forEach(r=>{
-        const id=Date.now()+Math.random();
-        set(ref(db,'registros/'+id),r)
-      });
+      if(!autorizado) return alert('Debe ingresar al Cpanel de administrador');
+      const file = e.target.files[0];
+      if(!file) return;
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      json.forEach(r=>{ const id = Date.now()+Math.floor(Math.random()*1000); set(ref(db,'registros/'+id), r); });
       alert('Importado correctamente');
       render(localSelect.value);
     }
 
-    btnAgregar.onclick=agregar;
-    btnLimpiarLocal.onclick=limpiarLocal;
-    btnVaciarTodo.onclick=vaciarTodo;
-    document.getElementById('btnExportar').onclick=exportarExcel;
+    // Bindings
+    btnAgregar.addEventListener('click', agregar);
+    btnLimpiarLocal.addEventListener('click', limpiarLocal);
+    btnVaciarTodo.addEventListener('click', vaciarTodo);
+    btnExportar.addEventListener('click', exportarExcel);
 
-    const inputImport=document.createElement('input');inputImport.type='file';inputImport.accept='.xlsx';inputImport.onchange=importarExcel;
-    document.getElementById('btnImportar').onclick=()=>inputImport.click();
+    const inputImport = document.createElement('input'); inputImport.type='file'; inputImport.accept='.xlsx'; inputImport.style.display='none'; inputImport.addEventListener('change', importarExcel);
+    document.body.appendChild(inputImport);
+    btnImportar.addEventListener('click', ()=>inputImport.click());
 
-    localSelect.onchange=()=>render(localSelect.value);
-    tabla.addEventListener('click',e=>{
-      if(e.target.matches('.del-btn'))eliminar(e.target.dataset.id);
-      if(e.target.matches('.edit-btn'))editar(e.target.dataset.id);
+    // Tabla delegation
+    tabla.addEventListener('click', e=>{
+      if(e.target.matches('.del-btn')) eliminar(e.target.dataset.id);
+      if(e.target.matches('.edit-btn')) editar(e.target.dataset.id);
     });
 
-    const darkBtn=document.getElementById('darkModeBtn');
-    darkBtn.onclick=()=>{
-      const isDark=document.body.classList.toggle('dark');
-      darkBtn.textContent=isDark?'☀️':'🌙';
-    };
+    localSelect.addEventListener('change', ()=>render(localSelect.value));
 
-    onValue(ref(db,'registros'),()=>render(localSelect.value));
+    const darkBtn=document.getElementById('darkModeBtn'); darkBtn.addEventListener('click', ()=>{ const isDark=document.body.classList.toggle('dark'); darkBtn.textContent=isDark?'☀️':'🌙'; });
+
+    // Observe DB changes
+    onValue(ref(db,'registros'), ()=>render(localSelect.value));
+
+    // Inicial
+    render(localSelect.value);
+
   </script>
 </body>
 </html>
