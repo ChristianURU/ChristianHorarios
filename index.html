@@ -36,6 +36,7 @@
       <button class="ghost" id="darkModeBtn" type="button">🌙</button>
       <button id="btnExportar" class="primary">Exportar a Excel</button>
       <button id="btnImportar" class="secondary">Importar desde Excel</button>
+      <button id="btnAdmin" class="ghost">Cpanel Administrador</button>
       <div class="spacer"></div>
       <div class="brand">Development by Christian Sena</div>
     </div>
@@ -96,8 +97,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
-    import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-
+    import { getDatabase, ref, set, get, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
     import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
     const firebaseConfig = {
@@ -124,26 +124,119 @@
     const btnAgregar=document.getElementById('btnAgregar');
     const btnLimpiarLocal=document.getElementById('btnLimpiarLocal');
     const btnVaciarTodo=document.getElementById('btnVaciarTodo');
+    const btnAdmin=document.getElementById('btnAdmin');
     const tabla=document.getElementById('tabla-registro');
     const countBadge=document.getElementById('countBadge');
     const totalHorasEl=document.getElementById('totalHoras');
 
+    const ADMIN_PASSWORD = '1234';
+    let autorizado = sessionStorage.getItem('autorizado') === 'true';
+
+    function pedirContraseña(){
+      const pass = prompt('Ingrese la contraseña de administrador:');
+      if(pass === ADMIN_PASSWORD){
+        autorizado = true;
+        sessionStorage.setItem('autorizado','true');
+        alert('Acceso concedido');
+        render(localSelect.value);
+      } else {
+        alert('Contraseña incorrecta');
+      }
+    }
+
+    btnAdmin.onclick = pedirContraseña;
+
     function calcularSegundos(e,s){if(!e||!s)return 0;const t1=new Date('1970-01-01T'+e+':00');const t2=new Date('1970-01-01T'+s+':00');let diff=(t2-t1)/1000;if(diff<0)diff+=86400;return Math.round(diff)}
     function formatHMS(seconds){const h=Math.floor(seconds/3600);const m=Math.floor((seconds%3600)/60);const s=seconds%60;return `${h}h ${m}m ${s}s`}
 
-    function render(sel){localLabel.textContent=localSelect.options[localSelect.selectedIndex].text;tabla.innerHTML='';get(ref(db,'registros')).then(snapshot=>{let count=0,total=0;snapshot.forEach(child=>{const d=child.val();if(d.local!==sel)return;total+=d.segundos;const tr=document.createElement('tr');tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td><button class='action-btn del-btn' data-id='${child.key}'>Eliminar</button></td>`;tabla.appendChild(tr);count++;});countBadge.textContent=`${count} registros`;totalHorasEl.textContent=formatHMS(total);});}
+    function render(sel){
+      localLabel.textContent=localSelect.options[localSelect.selectedIndex].text;
+      tabla.innerHTML='';
+      get(ref(db,'registros')).then(snapshot=>{
+        let count=0,total=0;
+        snapshot.forEach(child=>{
+          const d=child.val();
+          if(d.local!==sel)return;
+          total+=d.segundos;
+          const tr=document.createElement('tr');
+          tr.innerHTML=`<td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td><td>${autorizado ? `<button class='action-btn edit-btn' data-id='${child.key}'>Editar</button> <button class='action-btn del-btn' data-id='${child.key}'>Eliminar</button>` : ''}</td>`;
+          tabla.appendChild(tr);
+          count++;
+        });
+        countBadge.textContent=`${count} registros`;
+        totalHorasEl.textContent=formatHMS(total);
+      });
+    }
 
-    function agregar(){const id=Date.now();const data={local:localSelect.value,empleado:empleado.value.trim(),dia:dia.value,entrada:entrada.value,salida:salida.value,segundos:calcularSegundos(entrada.value,salida.value)};if(!data.empleado)return alert('Ingrese nombre');set(ref(db,'registros/'+id),data).then(()=>{empleado.value='';salida.value='';render(localSelect.value);});}
+    function agregar(){
+      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
+      const id=Date.now();
+      const data={local:localSelect.value,empleado:empleado.value.trim(),dia:dia.value,entrada:entrada.value,salida:salida.value,segundos:calcularSegundos(entrada.value,salida.value)};
+      if(!data.empleado)return alert('Ingrese nombre');
+      set(ref(db,'registros/'+id),data).then(()=>{empleado.value='';salida.value='';render(localSelect.value);});
+    }
 
-    function eliminar(id){if(confirm('¿Eliminar registro?'))remove(ref(db,'registros/'+id)).then(()=>render(localSelect.value));}
+    function editar(id){
+      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
+      get(ref(db,'registros/'+id)).then(snap=>{
+        const d=snap.val();
+        if(!d)return;
+        const nuevaEntrada=prompt('Nueva hora de entrada',d.entrada);
+        const nuevaSalida=prompt('Nueva hora de salida',d.salida);
+        if(!nuevaEntrada||!nuevaSalida)return;
+        const nuevosSegundos=calcularSegundos(nuevaEntrada,nuevaSalida);
+        update(ref(db,'registros/'+id),{entrada:nuevaEntrada,salida:nuevaSalida,segundos:nuevosSegundos}).then(()=>render(localSelect.value));
+      });
+    }
 
-    function limpiarLocal(){const sel=localSelect.value;if(!confirm(`¿Limpiar ${sel}?`))return;get(ref(db,'registros')).then(snapshot=>{snapshot.forEach(child=>{const d=child.val();if(d.local===sel)remove(ref(db,'registros/'+child.key));});render(sel);});}
+    function eliminar(id){
+      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
+      if(confirm('¿Eliminar registro?'))remove(ref(db,'registros/'+id)).then(()=>render(localSelect.value));
+    }
 
-    function vaciarTodo(){if(confirm('¿Vaciar todo?'))remove(ref(db,'registros')).then(()=>render(localSelect.value));}
+    function limpiarLocal(){
+      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
+      const sel=localSelect.value;
+      if(!confirm(`¿Limpiar ${sel}?`))return;
+      get(ref(db,'registros')).then(snapshot=>{
+        snapshot.forEach(child=>{
+          const d=child.val();
+          if(d.local===sel)remove(ref(db,'registros/'+child.key));
+        });
+        render(sel);
+      });
+    }
 
-    async function exportarExcel(){const snapshot=await get(ref(db,'registros'));const data=[];snapshot.forEach(child=>{data.push(child.val())});const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Registros');XLSX.writeFile(wb,'registros.xlsx');}
+    function vaciarTodo(){
+      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
+      if(confirm('¿Vaciar todo?'))remove(ref(db,'registros')).then(()=>render(localSelect.value));
+    }
 
-    async function importarExcel(e){const file=e.target.files[0];if(!file)return;const data=await file.arrayBuffer();const workbook=XLSX.read(data);const sheet=workbook.Sheets[workbook.SheetNames[0]];const json=XLSX.utils.sheet_to_json(sheet);json.forEach(r=>{const id=Date.now()+Math.random();set(ref(db,'registros/'+id),r)});alert('Importado correctamente');render(localSelect.value);}
+    async function exportarExcel(){
+      const snapshot=await get(ref(db,'registros'));
+      const data=[];
+      snapshot.forEach(child=>{data.push(child.val())});
+      const ws=XLSX.utils.json_to_sheet(data);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Registros');
+      XLSX.writeFile(wb,'registros.xlsx');
+    }
+
+    async function importarExcel(e){
+      if(!autorizado)return alert('Debe ingresar al Cpanel de administrador');
+      const file=e.target.files[0];
+      if(!file)return;
+      const data=await file.arrayBuffer();
+      const workbook=XLSX.read(data);
+      const sheet=workbook.Sheets[workbook.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(sheet);
+      json.forEach(r=>{
+        const id=Date.now()+Math.random();
+        set(ref(db,'registros/'+id),r)
+      });
+      alert('Importado correctamente');
+      render(localSelect.value);
+    }
 
     btnAgregar.onclick=agregar;
     btnLimpiarLocal.onclick=limpiarLocal;
@@ -154,9 +247,16 @@
     document.getElementById('btnImportar').onclick=()=>inputImport.click();
 
     localSelect.onchange=()=>render(localSelect.value);
-    tabla.addEventListener('click',e=>{if(e.target.matches('.del-btn'))eliminar(e.target.dataset.id);});
+    tabla.addEventListener('click',e=>{
+      if(e.target.matches('.del-btn'))eliminar(e.target.dataset.id);
+      if(e.target.matches('.edit-btn'))editar(e.target.dataset.id);
+    });
 
-    const darkBtn=document.getElementById('darkModeBtn');darkBtn.onclick=()=>{const isDark=document.body.classList.toggle('dark');darkBtn.textContent=isDark?'☀️':'🌙';};
+    const darkBtn=document.getElementById('darkModeBtn');
+    darkBtn.onclick=()=>{
+      const isDark=document.body.classList.toggle('dark');
+      darkBtn.textContent=isDark?'☀️':'🌙';
+    };
 
     onValue(ref(db,'registros'),()=>render(localSelect.value));
   </script>
