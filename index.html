@@ -38,9 +38,18 @@
     .status .online{color:#16a34a;font-weight:700;display:inline-flex;align-items:center;gap:8px}
     .status .online::before{content:'';width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;animation:blink 1s linear infinite}
     @keyframes blink{0%,50%{opacity:1;transform:scale(1)}51%,100%{opacity:0.25;transform:scale(0.9)}}
-  .top-employee td:first-child{color:#d97706;font-weight:700;animation:glow 1.5s ease-in-out infinite alternate;}
-@keyframes glow{0%{transform:scale(1);}100%{transform:scale(1.05);} }
-</style>
+
+    /* Top employee (1st) - subtle gold */
+    .top-employee td:first-child{color:#d97706;font-weight:700;}
+    .top-employee:hover{background:rgba(217,119,6,0.08) !important;transition:all .25s ease-in-out;}
+    .top-employee:hover td{color:#b45309 !important;font-weight:700;}
+
+    /* Second employee (2nd) - subtle blue with fire icon */
+    .second-employee td:first-child{color:#2563eb;font-weight:700;}
+    .second-employee:hover{background:rgba(37,99,235,0.08) !important;transition:all .25s ease-in-out;}
+    .second-employee:hover td{color:#1d4ed8 !important;font-weight:700;}
+
+  </style>
 </head>
 <body>
   <div class="container">
@@ -259,8 +268,9 @@ function renderDashboard(){
     const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
     entries.forEach(([emp,secs], idx)=>{
       const isTop = idx === 0;
-      const crown = isTop ? "👑 " : "";
-      const className = isTop ? "top-employee" : "";
+      const isSecond = idx === 1;
+      const crown = isTop ? "👑 " : (isSecond ? "🔥 " : "");
+      const className = isTop ? "top-employee" : isSecond ? "second-employee" : "";
       tablaDashboard.innerHTML+=`<tr class="${className}"><td>${crown}${emp}</td><td>${formatHMS(secs)}</td></tr>`;
     });
   });
