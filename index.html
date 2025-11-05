@@ -49,9 +49,32 @@
     .second-employee:hover{background:rgba(37,99,235,0.08) !important;transition:all .25s ease-in-out;}
     .second-employee:hover td{color:#1d4ed8 !important;font-weight:700;}
 
+    /* Admin login modal */
+    .admin-modal{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);display:flex;justify-content:center;align-items:center;z-index:9999}
+    .admin-modal.hidden{display:none}
+    .admin-modal-content{background:#1f2937;padding:24px;border-radius:12px;width:90%;max-width:380px;box-shadow:0 8px 30px rgba(0,0,0,0.3);text-align:center}
+    .admin-modal-content h2{color:#fff;margin-bottom:16px;font-size:20px}
+    .admin-modal-content input{width:100%;padding:10px;border-radius:8px;border:1px solid #4b5563;background:#111827;color:#fff;margin-bottom:12px}
+    .admin-modal-content .actions{display:flex;gap:8px;align-items:center}
+    .admin-modal-content .toggle-eye{background:transparent;border:0;color:#fff;cursor:pointer}
   </style>
 </head>
 <body>
+  <!-- Admin Login Modal -->
+  <div id="adminModal" class="admin-modal hidden">
+    <div class="admin-modal-content">
+      <h2>🔐 Acceso Administrador</h2>
+      <input id="adminPassInput" type="password" placeholder="Contraseña" aria-label="Contraseña administrador" />
+      <div class="actions" style="margin-top:8px">
+        <button id="adminLoginBtn" class="primary" style="flex:1">Ingresar</button>
+        <button id="adminCancelBtn" class="ghost" style="flex:1">Cancelar</button>
+      </div>
+      <div style="margin-top:10px">
+        <button id="togglePass" class="toggle-eye">Mostrar / Ocultar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <div class="topbar">
       <button class="ghost" id="darkModeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
@@ -169,13 +192,35 @@ const localLabel = document.getElementById("localLabel");
 let adminUnlocked = false;
 const ADMIN_PASSWORD = "1234";
 
+// Modal elements
+const adminModal = document.getElementById('adminModal');
+const adminLoginBtn = document.getElementById('adminLoginBtn');
+const adminCancelBtn = document.getElementById('adminCancelBtn');
+const adminPassInput = document.getElementById('adminPassInput');
+const togglePass = document.getElementById('togglePass');
+
 btnAdmin.addEventListener("click", () => {
-  if (adminUnlocked) return alert("Panel administrador ya activo.");
-  const pass = prompt("Ingrese la contraseña de administrador:");
-  if (pass === ADMIN_PASSWORD) {
+  adminModal.classList.remove('hidden');
+});
+
+adminCancelBtn.addEventListener('click', () => {
+  adminModal.classList.add('hidden');
+  adminPassInput.value = '';
+});
+
+adminLoginBtn.addEventListener("click", () => {
+  if(adminPassInput.value === ADMIN_PASSWORD){
     adminUnlocked = true;
-    alert("Panel administrador desbloqueado");
-  } else alert("Contraseña incorrecta");
+    adminModal.classList.add('hidden');
+    adminPassInput.value = '';
+    alert('Administrador desbloqueado');
+  } else {
+    alert("Contraseña incorrecta");
+  }
+});
+
+togglePass.addEventListener('click', ()=>{
+  if(adminPassInput.type === 'password') adminPassInput.type = 'text'; else adminPassInput.type = 'password';
 });
 
 function calcularSegundos(e, s) {
@@ -333,8 +378,9 @@ function applyTheme(saved){
   }
 }
 
-// Cargar tema guardado
-applyTheme(localStorage.getItem('theme'));
+// Forzar modo oscuro siempre
+applyTheme('dark');
+localStorage.setItem('theme', 'dark');
 
 // Listener
 if(darkModeBtn){
