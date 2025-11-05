@@ -38,7 +38,9 @@
     .status .online{color:#16a34a;font-weight:700;display:inline-flex;align-items:center;gap:8px}
     .status .online::before{content:'';width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;animation:blink 1s linear infinite}
     @keyframes blink{0%,50%{opacity:1;transform:scale(1)}51%,100%{opacity:0.25;transform:scale(0.9)}}
-  </style>
+  .top-employee td:first-child{color:#d97706;font-weight:700;animation:glow 1.5s ease-in-out infinite alternate;}
+@keyframes glow{0%{transform:scale(1);}100%{transform:scale(1.05);} }
+</style>
 </head>
 <body>
   <div class="container">
@@ -254,10 +256,12 @@ function renderDashboard(){
       map[d.empleado]+=parseInt(d.segundos)||0;
     });
     tablaDashboard.innerHTML="";
-    Object.entries(map)
-      .sort((a,b)=>b[1]-a[1])
-      .forEach(([emp,secs])=>{
-      tablaDashboard.innerHTML+=`<tr><td>${emp}</td><td>${formatHMS(secs)}</td></tr>`;
+    const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+    entries.forEach(([emp,secs], idx)=>{
+      const isTop = idx === 0;
+      const crown = isTop ? "👑 " : "";
+      const className = isTop ? "top-employee" : "";
+      tablaDashboard.innerHTML+=`<tr class="${className}"><td>${crown}${emp}</td><td>${formatHMS(secs)}</td></tr>`;
     });
   });
 }
