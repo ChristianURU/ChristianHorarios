@@ -45,7 +45,7 @@
     .top-employee:hover{background:rgba(217,119,6,0.08) !important;transition:all .25s ease-in-out;}
     .top-employee:hover td{color:#b45309 !important;font-weight:700;}
 
-    /* Second employee (2nd) - subtle blue with fire icon */
+    /* Second employee (2nd) - subtle blue */
     .second-employee td:first-child{color:#2563eb;font-weight:700;}
     .second-employee:hover{background:rgba(37,99,235,0.08) !important;transition:all .25s ease-in-out;}
     .second-employee:hover td{color:#1d4ed8 !important;font-weight:700;}
@@ -53,9 +53,8 @@
     /* ---- BOTÓN FLOTANTE INSTAGRAM (solo PC) ---- */
     #instagramFloatContainer {
       position: fixed;
-      /* Cambia aquí la posición */
-      bottom: -148px;   /* distancia desde el fondo */
-      right: -55px;    /* distancia desde la barra de scroll */
+      bottom: -148px;
+      right: -55px;
       z-index: 9999;
       display: flex;
       flex-direction: column;
@@ -75,8 +74,7 @@
     #instagramFloat:hover { transform: scale(1.15); }
 
     #instagramFloat img {
-      /* Cambia aquí el tamaño de la imagen (solo en HTML) */
-      width: 200px;               /* ancho deseado */
+      width: 200px;
       height: auto;
       filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
       transition: all 0.3s ease;
@@ -96,6 +94,56 @@
     @media (max-width: 768px) {
       #instagramFloatContainer { display: none !important; }
     }
+
+    /* ---- NUEVO MODAL DE LOGIN MEJORADO ---- */
+    #loginModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99999;
+      opacity: 0; pointer-events: none; transition: opacity .3s ease;
+    }
+    #loginModal.show { opacity: 1; pointer-events: auto; }
+    .login-card {
+      background: var(--card); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      text-align: center; animation: modalIn .4s ease forwards;
+    }
+    body.dark .login-card { background: #1f2937; }
+    @keyframes modalIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .login-card h2 { margin: 0 0 20px; font-size: 22px; color: var(--primary); }
+    .login-card .input-group { position: relative; margin-bottom: 16px; }
+    .login-card .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .login-card input, .login-card select {
+      padding-left: 38px !important; height: 46px; font-size: 15px;
+    }
+    .login-card .btn-group { justify-content: center; margin-top: 20px; }
+    .login-card .error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+    .login-card .error.show { display: block; }
+    .login-card .logout-info { margin-top: 18px; font-size: 13px; color: var(--muted); }
+    .login-card .logout-info span { color: var(--primary); font-weight: 600; }
+
+    /* ESTADO VISUAL DE MODO SOLO LECTURA */
+    .readonly-mode .btn-group button:not(#btnLogoutTop),
+    .readonly-mode .action-btn,
+    .readonly-mode #local,
+    .readonly-mode #empleado,
+    .readonly-mode #entrada,
+    .readonly-mode #salida,
+    .readonly-mode #btnLimpiarLocal { opacity: 0.5; pointer-events: none; }
+    .readonly-mode .badge { background: rgba(156,163,175,0.1); color: var(--secondary); }
+
+    /* ---- MODAL DE EDICIÓN MEJORADO ---- */
+    #editModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99998;
+      opacity: 0; pointer-events: none; transition: opacity .3s ease;
+    }
+    #editModal.show { opacity: 1; pointer-events: auto; }
+    .edit-card {
+      background: var(--card); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      animation: modalIn .3s ease forwards;
+    }
+    body.dark .edit-card { background: #1f2937; }
+    .edit-card h3 { margin: 0 0 18px; font-size: 18px; color: var(--primary); }
+    .edit-card .form-row { margin-top: 10px; }
+    .edit-card .btn-group { justify-content: flex-end; margin-top: 20px; }
+    .edit-card .btn-cancel { background: var(--secondary); }
   </style>
 </head>
 <body>
@@ -112,19 +160,82 @@
     @keyframes float{0%{transform:translateY(0);}50%{transform:translateY(-10px);}100%{transform:translateY(0);}}
   </style>
 
-  <div class="container">
+  <!-- MODAL DE LOGIN MEJORADO -->
+  <div id="loginModal">
+    <div class="login-card">
+      <h2>Acceso</h2>
+      <div class="input-group">
+        <i class="fa-solid fa-store"></i>
+        <select id="modalLocal">
+          <option value="pocitos">Sushi Time Pocitos</option>
+          <option value="carrasco">Sushi Time Carrasco</option>
+          <option value="lagomar">Sushi Time Lagomar</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <i class="fa-solid fa-key"></i>
+        <input type="password" id="modalPassword" placeholder="Contraseña (opcional para modo vista)" />
+      </div>
+      <p class="error" id="loginError">Contraseña incorrecta</p>
+      <div class="btn-group">
+        <button id="btnLoginConfirm" class="primary">Ingresar</button>
+        <button id="btnLoginCancel" class="ghost">Cancelar</button>
+      </div>
+      <div class="logout-info" id="logoutInfo" style="display:none;">
+        Sesión: <span id="activeUser"></span> (<span id="activeLocal"></span>) — <a href="#" id="btnLogout" style="color:var(--primary);text-decoration:underline;">Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDICIÓN -->
+  <div id="editModal">
+    <div class="edit-card">
+      <h3>Editar Registro</h3>
+      <label>Empleado</label>
+      <input type="text" id="editEmpleado" />
+      
+      <div class="form-row">
+        <div>
+          <label>Día</label>
+          <select id="editDia">
+            <option value="martes">Martes</option>
+            <option value="miercoles">Miércoles</option>
+            <option value="jueves">Jueves</option>
+            <option value="viernes">Viernes</option>
+            <option value="sabado">Sábado</option>
+            <option value="domingo">Domingo</option>
+          </select>
+        </div>
+        <div>
+          <label>Entrada</label>
+          <input type="time" id="editEntrada" />
+        </div>
+        <div>
+          <label>Salida</label>
+          <input type="time" id="editSalida" />
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button id="btnEditCancel" class="btn-cancel ghost">Cancelar</button>
+        <button id="btnEditSave" class="primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="mainApp" style="display:none;">
     <div class="topbar">
       <button class="ghost" id="darkModeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
       <button id="btnExportar" class="primary">Exportar a Excel</button>
       <button id="btnImportar" class="secondary">Importar desde Excel</button>
-      <button id="btnAdmin" class="ghost">Cpanel Administrador</button>
+      <button id="btnLogoutTop" class="ghost" style="display:none;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
       <div class="spacer"></div>
       <div class="brand">Development by Christian Sena</div>
     </div>
 
     <div class="card">
       <label for="local">Local</label>
-      <select id="local">
+      <select id="local" disabled>
         <option value="pocitos">Sushi Time Pocitos</option>
         <option value="carrasco">Sushi Time Carrasco</option>
         <option value="lagomar">Sushi Time Lagomar</option>
@@ -135,15 +246,15 @@
 
       <div class="form-row">
         <div>
-          <label for="dia">Día</label>
-          <select id="dia">
-            <option value="martes" selected>Martes</option>
-            <option value="miercoles">Miércoles</option>
-            <option value="jueves">Jueves</option>
-            <option value="viernes">Viernes</option>
-            <option value="sabado">Sábado</option>
-            <option value="domingo">Domingo</option>
-          </select>
+         <label for="dia">Día</label>
+         <select id="dia">
+           <option value="martes" selected>Martes</option>
+           <option value="miercoles">Miércoles</option>
+           <option value="jueves">Jueves</option>
+           <option value="viernes">Viernes</option>
+           <option value="sabado">Sábado</option>
+           <option value="domingo">Domingo</option>
+         </select>
         </div>
         <div>
           <label for="entrada">Entrada</label>
@@ -173,7 +284,7 @@
       </table>
     </div>
 
-    <!-- DASHBOARD DE HORAS POR EMPLEADO -->
+    <!-- DASHوسکBOARD DE HORAS POR EMPLEADO -->
     <h3 style="margin-top:18px">Dashboard — Horas por Empleado</h3>
     <div class="card">
       <table>
@@ -193,7 +304,6 @@
   <!-- BOTÓN FLOTANTE INSTAGRAM (solo PC) -->
   <div id="instagramFloatContainer">
     <a href="https://www.instagram.com/sushitime.uy/" target="_blank" id="instagramFloat" aria-label="Síguenos en Instagram">
-      <!-- Cambia width en el <img> o en el CSS arriba para redimensionar -->
       <img src="https://i.ibb.co/1JPMxWnS/6a67f3cb-982a-4011-afff-9de099600bca-1.png" alt="Síguenos en Instagram" />
     </a>
   </div>
@@ -216,9 +326,28 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const btnAdmin = document.getElementById('btnAdmin');
-const btnAgregar = document.getElementById('btnAgregar');
-const btnLimpiarLocal = document.getElementById('btnLimpiarLocal');
+// === ELEMENTOS ===
+const loginModal = document.getElementById('loginModal');
+const modalLocal = document.getElementById('modalLocal');
+const modalPassword = document.getElementById('modalPassword');
+const btnLoginConfirm = document.getElementById('btnLoginConfirm');
+const btnLoginCancel = document.getElementById('btnLoginCancel');
+const loginError = document.getElementById('loginError');
+const logoutInfo = document.getElementById('logoutInfo');
+const activeUser = document.getElementById('activeUser');
+const activeLocal = document.getElementById('activeLocal');
+const btnLogout = document.getElementById('btnLogout');
+const btnLogoutTop = document.getElementById('btnLogoutTop');
+
+const editModal = document.getElementById('editModal');
+const editEmpleado = document.getElementById('editEmpleado');
+const editDia = document.getElementById('editDia');
+const editEntrada = document.getElementById('editEntrada');
+const editSalida = document.getElementById('editSalida');
+const btnEditSave = document.getElementById('btnEditSave');
+const btnEditCancel = document.getElementById('btnEditCancel');
+
+const mainApp = document.getElementById('mainApp');
 const localSelect = document.getElementById("local");
 const empleado = document.getElementById("empleado");
 const dia = document.getElementById("dia");
@@ -228,25 +357,171 @@ const tabla = document.getElementById("tabla-registro");
 const countBadge = document.getElementById("countBadge");
 const totalHorasEl = document.getElementById("totalHoras");
 const localLabel = document.getElementById("localLabel");
+const btnAgregar = document.getElementById('btnAgregar');
+const btnLimpiarLocal = document.getElementById('btnLimpiarLocal');
 
+let editingId = null; // ID del registro en edición
+
+// === CONTRASEÑAS ===
 const LOCAL_PASSWORDS = {
   pocitos: "pocitos123",
   carrasco: "carrasco123",
   lagomar: "lagomar123",
-  master: "admin123"
+  master: "Santiago2025"
 };
-let adminUnlocked = false;
-let adminLocal = null;
 
-btnAdmin.addEventListener("click", () => {
-  if (adminUnlocked) return alert("Panel administrador ya activo.");
-  const selected = localSelect.value;
-  const pass = prompt(`Ingrese contraseña del local ${selected} (o clave Master):`);
-  if (pass === LOCAL_PASSWORDS.master) { adminUnlocked = true; adminLocal = "master"; return alert("Acceso MASTER concedido"); }
-  if (pass === LOCAL_PASSWORDS[selected]) { adminUnlocked = true; adminLocal = selected; return alert(`Acceso concedido a ${selected}`); }
-  alert("Contraseña incorrecta");
+let isLoggedIn = false;
+let currentLocal = null;
+let currentRole = null;
+
+// === FORZAR LOGIN AL ABRIR ===
+function forceLogin() {
+  localStorage.removeItem('sushiAdminSession');
+  showLogin();
+}
+forceLogin();
+
+// Mostrar modal
+function showLogin() {
+  loginModal.classList.add('show');
+  modalPassword.focus();
+}
+
+// Cerrar sesión
+function logout() {
+  localStorage.removeItem('sushiAdminSession');
+  location.reload();
+}
+
+// Iniciar como VISOR
+function enterViewerMode(local) {
+  isLoggedIn = true;
+  currentLocal = local;
+  currentRole = 'viewer';
+
+  loginModal.classList.remove('show');
+  mainApp.style.display = 'block';
+  mainApp.classList.add('readonly-mode');
+  localSelect.value = local;
+  localSelect.disabled = true;
+  render(local);
+  renderDashboard();
+
+  activeUser.textContent = 'VISOR';
+  activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
+  logoutInfo.style.display = 'block';
+  btnLogoutTop.style.display = 'inline-flex';
+}
+
+// Iniciar como ADMIN
+function enterAdminMode(local, role) {
+  isLoggedIn = true;
+  currentLocal = local;
+  currentRole = role;
+
+  loginModal.classList.remove('show');
+  mainApp.style.display = 'block';
+  mainApp.classList.remove('readonly-mode');
+  localSelect.value = local;
+  localSelect.disabled = role !== 'master';
+  render(local);
+  renderDashboard();
+
+  activeUser.textContent = role === 'master' ? 'MASTER' : 'Local';
+  activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
+  logoutInfo.style.display = 'block';
+  btnLogoutTop.style.display = 'inline-flex';
+}
+
+// Cerrar sesión desde botón superior
+btnLogoutTop.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (confirm("¿Cerrar sesión?")) {
+    logout();
+  }
 });
 
+// Cerrar sesión desde modal
+btnLogout.addEventListener('click', (e) => {
+  e.preventDefault();
+  logout();
+});
+
+// === ENTER EN CONTRASEÑA ===
+modalPassword.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    btnLoginConfirm.click();
+  }
+});
+
+// Confirmar login
+btnLoginConfirm.addEventListener('click', () => {
+  const selected = modalLocal.value;
+  const pass = modalPassword.value.trim();
+
+  if (pass === '') {
+    enterViewerMode(selected);
+  } else if (pass === LOCAL_PASSWORDS.master) {
+    enterAdminMode(selected, 'master');
+  } else if (pass === LOCAL_PASSWORDS[selected]) {
+    enterAdminMode(selected, 'local');
+  } else {
+    loginError.classList.add('show');
+    modalPassword.value = '';
+    setTimeout(() => loginError.classList.remove('show'), 3000);
+  }
+});
+
+btnLoginCancel.addEventListener('click', () => {
+  if (isLoggedIn) {
+    loginModal.classList.remove('show');
+  } else {
+    alert("Debes ingresar (o dejar vacío) para continuar.");
+  }
+});
+
+// === EDICIÓN MEJORADA CON MODAL ===
+function openEditModal(id) {
+  get(ref(db, "registros/" + id)).then((snap) => {
+    const d = snap.val();
+    if (!d) return alert("Registro no encontrado");
+
+    editingId = id;
+    editEmpleado.value = d.empleado;
+    editDia.value = d.dia;
+    editEntrada.value = d.entrada;
+    editSalida.value = d.salida;
+
+    editModal.classList.add('show');
+  });
+}
+
+btnEditSave.addEventListener('click', () => {
+  if (!editingId) return;
+
+  const segs = calcularSegundos(editEntrada.value, editSalida.value);
+  const updated = {
+    empleado: editEmpleado.value.trim(),
+    dia: editDia.value,
+    entrada: editEntrada.value,
+    salida: editSalida.value,
+    segundos: segs,
+    local: currentLocal
+  };
+
+  set(ref(db, "registros/" + editingId), updated).then(() => {
+    editModal.classList.remove('show');
+    editingId = null;
+  });
+});
+
+btnEditCancel.addEventListener('click', () => {
+  editModal.classList.remove('show');
+  editingId = null;
+});
+
+// === FUNCIONES DE REGISTRO ===
 function calcularSegundos(e, s) {
   if (!e || !s) return 0;
   const t1 = new Date("1970-01-01T" + e + ":00");
@@ -263,7 +538,7 @@ function formatHMS(seconds) {
 }
 
 btnAgregar.addEventListener("click", () => {
-  if (!adminUnlocked) return alert("Debe desbloquear el panel administrador primero.");
+  if (currentRole === 'viewer') return alert("Modo solo lectura. Ingresa con contraseña para editar.");
   if (!empleado.value.trim()) return alert("Ingrese un nombre de empleado");
   const id = Date.now();
   const segs = calcularSegundos(entrada.value, salida.value);
@@ -274,7 +549,7 @@ btnAgregar.addEventListener("click", () => {
 });
 
 btnLimpiarLocal.addEventListener("click", () => {
-  if (!adminUnlocked) return alert("Debe desbloquear el panel administrador primero.");
+  if (currentRole === 'viewer') return alert("No puedes limpiar en modo visor.");
   const sel = localSelect.value;
   if (!confirm(`¿Limpiar registros del local ${sel}?`)) return;
   get(ref(db, "registros")).then((snap) => {
@@ -291,12 +566,13 @@ function render(sel) {
       const d = c.val();
       if (d.local !== sel) return;
       total += parseInt(d.segundos) || 0;
+      const actions = currentRole !== 'viewer'
+        ? `<button class='action-btn edit-btn' data-id='${c.key}'><i class="fa-solid fa-pen"></i></button>
+           <button class='action-btn del-btn' data-id='${c.key}'><i class="fa-solid fa-trash"></i></button>`
+        : '';
       tabla.innerHTML += `<tr>
         <td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td>
-        <td>
-          <button class='action-btn edit-btn' data-id='${c.key}'>Editar</button>
-          <button class='action-btn del-btn' data-id='${c.key}'>Eliminar</button>
-        </td>
+        <td>${actions}</td>
       </tr>`;
       count++;
     });
@@ -310,42 +586,40 @@ const tablaDashboard = document.getElementById("tabla-dashboard");
 function renderDashboard(){
   get(ref(db, "registros")).then(snapshot=>{
     const map = {};
-    snapshot.forEach(c=>{ const d=c.val(); if(!map[d.empleado]) map[d.empleado]=0; map[d.empleado]+=parseInt(d.segundos)||0; });
-    tablaDashboard.innerHTML="";
-    const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
-    entries.forEach(([emp,secs], idx) => {
-      const isTop = idx === 0;
-      const isSecond = idx === 1;
-      const crown = isTop ? "Top " : (isSecond ? "Hot " : "");
-      const className = isTop ? "top-employee" : isSecond ? "second-employee" : "";
-      tablaDashboard.innerHTML+=`<tr class="${className}"><td>${crown}${emp}</td><td>${formatHMS(secs)}</td></tr>`;
+    snapshot.forEach(c => {
+      const d = c.val();
+      if (!map[d.empleado]) map[d.empleado] = 0;
+      map[d.empleado] += parseInt(d.segundos) || 0;
+    });
+    tablaDashboard.innerHTML = "";
+    const entries = Object.entries(map).sort((a,b) => b[1] - a[1]);
+    entries.forEach(([emp, secs], idx) => {
+      const className = idx === 0 ? "top-employee" : idx === 1 ? "second-employee" : "";
+      tablaDashboard.innerHTML += `<tr class="${className}"><td>${emp}</td><td>${formatHMS(secs)}</td></tr>`;
     });
   });
 }
-onValue(ref(db, "registros"), () => { render(localSelect.value); renderDashboard(); });
 
-tabla.addEventListener("click", (e) => {
-  const el = e.target;
-  const id = el.dataset && el.dataset.id;
-  if (!id) return;
-  if (el.classList.contains("del-btn")) {
-    if (!adminUnlocked) return alert("Debe desbloquear el panel administrador primero.");
-    if (confirm("¿Eliminar registro?")) remove(ref(db, "registros/" + id));
-    return;
+// === ACTUALIZACIÓN EN TIEMPO REAL ===
+onValue(ref(db, "registros"), (snapshot) => {
+  if (isLoggedIn) {
+    render(localSelect.value);
+    renderDashboard();
   }
-  if (el.classList.contains("edit-btn")) {
-    if (!adminUnlocked) return alert("Debe desbloquear el panel administrador primero.");
-    get(ref(db, "registros/" + id)).then((snap) => {
-      const d = snap.val();
-      if (!d) return alert("Registro no encontrado");
-      const nuevoEmpleado = prompt("Editar nombre del empleado:", d.empleado) || d.empleado;
-      const nuevaDia = prompt("Editar día:", d.dia) || d.dia;
-      const nuevaEntrada = prompt("Editar hora de entrada (HH:MM):", d.entrada) || d.entrada;
-      const nuevaSalida = prompt("Editar hora de salida (HH:MM):", d.salida) || d.salida;
-      const segs = calcularSegundos(nuevaEntrada, nuevaSalida);
-      set(ref(db, "registros/" + id), { ...d, empleado: nuevoEmpleado, dia: nuevaDia, entrada: nuevaEntrada, salida: nuevaSalida, segundos: segs });
-    });
-    return;
+});
+
+// === ACCIONES EN TABLA (EDITAR / ELIMINAR) ===
+tabla.addEventListener("click", (e) => {
+  if (currentRole === 'viewer') return;
+  const el = e.target.closest('button');
+  if (!el) return;
+  const id = el.dataset?.id;
+  if (!id) return;
+
+  if (el.classList.contains("del-btn")) {
+    if (confirm("¿Eliminar registro?")) remove(ref(db, "registros/" + id));
+  } else if (el.classList.contains("edit-btn")) {
+    openEditModal(id);
   }
 });
 
@@ -353,7 +627,10 @@ tabla.addEventListener("click", (e) => {
 let lp = document.getElementById('loaderProgress');
 let p = 0;
 const loadInt = setInterval(()=>{ p += 2; if(lp) lp.style.width = p + '%'; if(p >= 100) clearInterval(loadInt); },100);
-setTimeout(()=>{ const scr = document.getElementById('loaderPage'); if(scr){scr.style.opacity='0';setTimeout(()=>scr.remove(),600);} },5000);
+setTimeout(()=>{ 
+  const scr = document.getElementById('loaderPage'); 
+  if(scr){scr.style.opacity='0';setTimeout(()=>scr.remove(),600);} 
+},5000);
 
 /* Tema oscuro */
 const darkModeBtn = document.getElementById('darkModeBtn');
