@@ -6,14 +6,26 @@
   <title>Registro de Horas — Sushi Time</title>
   <link rel="icon" type="image/png" href="https://www.sushitime.com.uy/Sushi%20Time_files/Untitled-1.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- SheetJS para Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    :root { --primary:#6366f1; --secondary:#6b7280; --danger:#ef4444; --bg:#fafafa; --card:#ffffff; --radius:12px; --muted:#6b7280 }
+    :root { --primary:#6366f1; --secondary:#6b7280; --danger:#ef4444; --bg:#fafafa; --card:#ffffff; --radius:12px; --muted:#6b7280; --success:#10b981; }
     body{font-family:Inter, Arial, sans-serif;background:var(--bg);margin:0;padding:16px;color:#111827;transition:all .3s ease;}
     body.dark{background:#111827;color:#f3f4f6}
     .container{max-width:1050px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,0.05);padding:16px;transition:background .3s ease;}
     body.dark .container{background:#1f2937;}
     .brand{text-align:right;font-size:16px;font-weight:bold;color:var(--primary);margin-bottom:10px;}
-    .topbar{display:flex;justify-content:flex-start;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+   
+    /* TOPBAR */
+    .topbar{
+      display:flex;
+      justify-content:flex-start;
+      align-items:center;
+      gap:10px;
+      margin-bottom:15px;
+      flex-wrap:wrap;
+      min-height:48px;
+    }
     .topbar .spacer{flex:1}
     .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;overflow-x:auto;transition:background .3s ease;}
     body.dark .card{background:#374151;border-color:#4b5563;color:#f9fafb}
@@ -23,10 +35,30 @@
     .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
     .form-row > div{flex:1;min-width:150px}
     .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    button{padding:10px 14px;border-radius:8px;border:0;color:#fff;cursor:pointer;transition:background 0.3s, transform 0.1s}
-    button:active{transform:scale(0.97)}
-    button.primary{background:var(--primary)}button.secondary{background:var(--secondary)}button.ghost{background:transparent;color:var(--primary);border:1px solid #d1d5db}
+    /* BOTONES UNIFICADOS */
+    button, .btn-label{
+      padding:10px 16px;
+      border-radius:8px;
+      border:0;
+      color:#fff;
+      cursor:pointer;
+      transition:background 0.3s, transform 0.1s;
+      font-size:14px;
+      font-weight:500;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      height:40px;
+      min-width:160px;
+      box-sizing:border-box;
+    }
+    button:active, .btn-label:active{transform:scale(0.97)}
+    button.primary, .btn-label.primary{background:var(--primary)}
+    button.secondary{background:var(--secondary)}
+    button.ghost{background:transparent;color:var(--primary);border:1px solid #d1d5db}
     body.dark button.ghost{color:#f3f4f6;border-color:#4b5563;}
+    .btn-label.primary:hover{background:#4f46e5;}
     table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;min-width:600px}
     th,td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:left}
     th{background:#f9fafb;color:var(--muted)}
@@ -39,111 +71,67 @@
     .status .online{color:#16a34a;font-weight:700;display:inline-flex;align-items:center;gap:8px}
     .status .online::before{content:'';width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;animation:blink 1s linear infinite}
     @keyframes blink{0%,50%{opacity:1;transform:scale(1)}51%,100%{opacity:0.25;transform:scale(0.9)}}
-
-    /* Top employee (1st) - subtle gold */
     .top-employee td:first-child{color:#d97706;font-weight:700;}
-    .top-employee:hover{background:rgba(217,119,6,0.08) !important;transition:all .25s ease-in-out;}
-    .top-employee:hover td{color:#b45309 !important;font-weight:700;}
-
-    /* Second employee (2nd) - subtle blue */
+    .top-employee:hover{background:rgba(217,119,6,0.08)!important;}
     .second-employee td:first-child{color:#2563eb;font-weight:700;}
-    .second-employee:hover{background:rgba(37,99,235,0.08) !important;transition:all .25s ease-in-out;}
-    .second-employee:hover td{color:#1d4ed8 !important;font-weight:700;}
-
-    /* ---- BOTÓN FLOTANTE INSTAGRAM (solo PC) ---- */
+    .second-employee:hover{background:rgba(37,99,235,0.08)!important;}
     #instagramFloatContainer {
-      position: fixed;
-      bottom: -148px;
-      right: -55px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
+      position: fixed; bottom: -148px; right: -55px; z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
-
-    #instagramFloat {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      transition: transform 0.2s ease;
-      animation: pulse 2s infinite;
-    }
-
+    #instagramFloat { background: transparent; border: none; cursor: pointer; padding: 0; transition: transform 0.2s ease; animation: pulse 2s infinite; }
     #instagramFloat:hover { transform: scale(1.15); }
-
-    #instagramFloat img {
-      width: 200px;
-      height: auto;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
-      transition: all 0.3s ease;
-    }
-
-    body.dark #instagramFloat img {
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)) brightness(1.1);
-    }
-
-    @keyframes pulse {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    /* Ocultar en móviles */
-    @media (max-width: 768px) {
-      #instagramFloatContainer { display: none !important; }
-    }
-
-    /* ---- NUEVO MODAL DE LOGIN MEJORADO ---- */
-    #loginModal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99999;
-      opacity: 0; pointer-events: none; transition: opacity .3s ease;
-    }
+    #instagramFloat img { width: 200px; height: auto; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2)); }
+    body.dark #instagramFloat img { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)) brightness(1.1); }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+    @media (max-width: 768px) { #instagramFloatContainer { display: none !important; } }
+    #loginModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #loginModal.show { opacity: 1; pointer-events: auto; }
-    .login-card {
-      background: var(--card); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-      text-align: center; animation: modalIn .4s ease forwards;
-    }
+    .login-card { background: var(--card); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); text-align: center; animation: modalIn .4s ease forwards; }
     body.dark .login-card { background: #1f2937; }
     @keyframes modalIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .login-card h2 { margin: 0 0 20px; font-size: 22px; color: var(--primary); }
     .login-card .input-group { position: relative; margin-bottom: 16px; }
     .login-card .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
-    .login-card input, .login-card select {
-      padding-left: 38px !important; height: 46px; font-size: 15px;
-    }
+    .login-card input, .login-card select { padding-left: 38px !important; height: 46px; font-size: 15px; }
     .login-card .btn-group { justify-content: center; margin-top: 20px; }
     .login-card .error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
     .login-card .error.show { display: block; }
     .login-card .logout-info { margin-top: 18px; font-size: 13px; color: var(--muted); }
     .login-card .logout-info span { color: var(--primary); font-weight: 600; }
-
-    /* ESTADO VISUAL DE MODO SOLO LECTURA */
     .readonly-mode .btn-group button:not(#btnLogoutTop),
     .readonly-mode .action-btn,
-    .readonly-mode #local,
     .readonly-mode #empleado,
     .readonly-mode #entrada,
     .readonly-mode #salida,
     .readonly-mode #btnLimpiarLocal { opacity: 0.5; pointer-events: none; }
     .readonly-mode .badge { background: rgba(156,163,175,0.1); color: var(--secondary); }
-
-    /* ---- MODAL DE EDICIÓN MEJORADO ---- */
-    #editModal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99998;
-      opacity: 0; pointer-events: none; transition: opacity .3s ease;
-    }
+    #editModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99998; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #editModal.show { opacity: 1; pointer-events: auto; }
-    .edit-card {
-      background: var(--card); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-      animation: modalIn .3s ease forwards;
-    }
+    .edit-card { background: var(--card); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); animation: modalIn .3s ease forwards; }
     body.dark .edit-card { background: #1f2937; }
     .edit-card h3 { margin: 0 0 18px; font-size: 18px; color: var(--primary); }
     .edit-card .form-row { margin-top: 10px; }
     .edit-card .btn-group { justify-content: flex-end; margin-top: 20px; }
     .edit-card .btn-cancel { background: var(--secondary); }
+    #permissionsModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 99997; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+    #permissionsModal.show { opacity: 1; pointer-events: auto; }
+    .user-perm-header { background: var(--primary); color: white; padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 18px 0 8px; }
+    .perm-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+    body.dark .perm-item { border-color: #4b5563; }
+    .perm-item:last-child { border: 0; }
+    .perm-label { font-size: 14px; font-weight: 500; }
+    .switch{position:relative;display:inline-block;width:48px;height:26px;}
+    .switch input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.4s;border-radius:34px;}
+    .slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:white;transition:.4s;border-radius:50%;}
+    input:checked + .slider{background:var(--success);}
+    input:checked + .slider:before{transform:translateX(22px);}
+    #permissionsContent::-webkit-scrollbar { width: 6px; }
+    #permissionsContent::-webkit-scrollbar-track { background: transparent; }
+    #permissionsContent::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.3); border-radius: 3px; }
+    body.dark #permissionsContent::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+    /* INPUT FILE OCULTO */
+    #importFile { display: none; }
   </style>
 </head>
 <body>
@@ -155,12 +143,10 @@
       <div id="loaderProgress" style="height:100%;width:0%;background:#ff4d4d;transition:width .15s linear;"></div>
     </div>
   </div>
-
   <style>
     @keyframes float{0%{transform:translateY(0);}50%{transform:translateY(-10px);}100%{transform:translateY(0);}}
   </style>
-
-  <!-- MODAL DE LOGIN MEJORADO -->
+  <!-- MODAL DE LOGIN -->
   <div id="loginModal">
     <div class="login-card">
       <h2>Acceso</h2>
@@ -186,14 +172,13 @@
       </div>
     </div>
   </div>
-
   <!-- MODAL DE EDICIÓN -->
   <div id="editModal">
     <div class="edit-card">
       <h3>Editar Registro</h3>
       <label>Empleado</label>
       <input type="text" id="editEmpleado" />
-      
+     
       <div class="form-row">
         <div>
           <label>Día</label>
@@ -215,35 +200,64 @@
           <input type="time" id="editSalida" />
         </div>
       </div>
-
       <div class="btn-group">
         <button id="btnEditCancel" class="btn-cancel ghost">Cancelar</button>
         <button id="btnEditSave" class="primary">Guardar</button>
       </div>
     </div>
   </div>
-
+  <!-- MODAL DE PERMISOS -->
+  <div id="permissionsModal">
+    <div class="edit-card" style="max-width:500px;width:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;color:var(--primary);">Permisos por Usuario</h3>
+        <button id="btnClosePermissions" class="ghost" style="padding:6px 10px;font-size:18px;">×</button>
+      </div>
+      <div id="permissionsContent" style="max-height:60vh;overflow-y:auto;padding-right:8px;">
+        <!-- Se genera con JS -->
+      </div>
+      <div class="btn-group" style="justify-content:flex-end;margin-top:20px;">
+        <button id="btnSavePermissions" class="primary">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
   <div class="container" id="mainApp" style="display:none;">
     <div class="topbar">
       <button class="ghost" id="darkModeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
-      <button id="btnExportar" class="primary">Exportar a Excel</button>
-      <button id="btnImportar" class="secondary">Importar desde Excel</button>
-      <button id="btnLogoutTop" class="ghost" style="display:none;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+     
+      <!-- BOTÓN EXPORTAR LOCAL -->
+      <button id="btnExportar" class="primary">
+        <i class="fa-solid fa-file-export"></i> Exportar a Excel
+      </button>
+     
+      <!-- BOTÓN IMPORTAR -->
+      <label class="btn-label primary" id="btnImportarLabel" for="importFile">
+        <i class="fa-solid fa-file-import"></i> Importar desde Excel
+      </label>
+      <input type="file" id="importFile" accept=".xlsx,.xls" />
+      <!-- NUEVO BOTÓN: BACKUP COMPLETO (SOLO MASTER) -->
+      <button id="btnBackupCompleto" class="primary" style="display:none;">
+        <i class="fa-solid fa-download"></i> Backup Completo (Excel)
+      </button>
+      <button id="btnOpenPermissions" class="ghost" style="display:none;">
+        <i class="fa-solid fa-shield-halved"></i> Permisos
+      </button>
+      <button id="btnLogoutTop" class="ghost" style="display:none;">
+        <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+      </button>
       <div class="spacer"></div>
       <div class="brand">Development by Christian Sena</div>
     </div>
-
+    <!-- RESTO DEL FORMULARIO -->
     <div class="card">
       <label for="local">Local</label>
-      <select id="local" disabled>
+      <select id="local">
         <option value="pocitos">Sushi Time Pocitos</option>
         <option value="carrasco">Sushi Time Carrasco</option>
         <option value="lagomar">Sushi Time Lagomar</option>
       </select>
-
       <label for="empleado">Empleado</label>
       <input type="text" id="empleado" placeholder="Nombre del empleado" />
-
       <div class="form-row">
         <div>
          <label for="dia">Día</label>
@@ -265,14 +279,12 @@
           <input type="time" id="salida" />
         </div>
       </div>
-
       <div class="btn-group">
         <button id="btnAgregar" class="primary">Agregar</button>
         <button id="btnLimpiarLocal" class="secondary">Limpiar local</button>
         <span class="badge" id="countBadge">0 registros</span>
       </div>
     </div>
-
     <h3 style="margin-top:18px">Registros — <span id="localLabel">Pocitos</span></h3>
     <div class="card">
       <table>
@@ -283,25 +295,22 @@
         <tfoot><tr><td><strong>Total</strong></td><td colspan="3"></td><td id="totalHoras">0h 0m 0s</td><td></td></tr></tfoot>
       </table>
     </div>
-
-    <!-- DASHوسکBOARD DE HORAS POR EMPLEADO -->
+    <!-- DASHBOARD CON LOCAL -->
     <h3 style="margin-top:18px">Dashboard — Horas por Empleado</h3>
     <div class="card">
       <table>
         <thead>
-          <tr><th>Empleado</th><th>Total Horas</th></tr>
+          <tr><th>Empleado</th><th>Local</th><th>Total Horas</th></tr>
         </thead>
         <tbody id="tabla-dashboard"></tbody>
       </table>
     </div>
-
     <footer class="status" role="status" aria-live="polite">
       <div><span>Current status Server :</span> <span class="online" id="serverStatus">Online</span></div>
       <div><span>Current status Firebase :</span> <span class="online" id="firebaseStatus">Online</span></div>
     </footer>
   </div>
-
-  <!-- BOTÓN FLOTANTE INSTAGRAM (solo PC) -->
+  <!-- BOTÓN FLOTANTE INSTAGRAM -->
   <div id="instagramFloatContainer">
     <a href="https://www.instagram.com/sushitime.uy/" target="_blank" id="instagramFloat" aria-label="Síguenos en Instagram">
       <img src="https://i.ibb.co/1JPMxWnS/6a67f3cb-982a-4011-afff-9de099600bca-1.png" alt="Síguenos en Instagram" />
@@ -338,7 +347,6 @@ const activeUser = document.getElementById('activeUser');
 const activeLocal = document.getElementById('activeLocal');
 const btnLogout = document.getElementById('btnLogout');
 const btnLogoutTop = document.getElementById('btnLogoutTop');
-
 const editModal = document.getElementById('editModal');
 const editEmpleado = document.getElementById('editEmpleado');
 const editDia = document.getElementById('editDia');
@@ -346,7 +354,11 @@ const editEntrada = document.getElementById('editEntrada');
 const editSalida = document.getElementById('editSalida');
 const btnEditSave = document.getElementById('btnEditSave');
 const btnEditCancel = document.getElementById('btnEditCancel');
-
+const permissionsModal = document.getElementById('permissionsModal');
+const btnOpenPermissions = document.getElementById('btnOpenPermissions');
+const btnClosePermissions = document.getElementById('btnClosePermissions');
+const btnSavePermissions = document.getElementById('btnSavePermissions');
+const permissionsContent = document.getElementById('permissionsContent');
 const mainApp = document.getElementById('mainApp');
 const localSelect = document.getElementById("local");
 const empleado = document.getElementById("empleado");
@@ -359,161 +371,111 @@ const totalHorasEl = document.getElementById("totalHoras");
 const localLabel = document.getElementById("localLabel");
 const btnAgregar = document.getElementById('btnAgregar');
 const btnLimpiarLocal = document.getElementById('btnLimpiarLocal');
+const btnExportar = document.getElementById('btnExportar');
+const importFile = document.getElementById('importFile');
+const btnImportarLabel = document.getElementById('btnImportarLabel');
+const btnBackupCompleto = document.getElementById('btnBackupCompleto');
 
-let editingId = null; // ID del registro en edición
-
-// === CONTRASEÑAS ===
+let editingId = null;
+let currentPermissions = {
+  canAdd: true, canEdit: true, canDelete: true, canClear: true, canExportImport: true, canEditOtherLocations: false
+};
 const LOCAL_PASSWORDS = {
   pocitos: "pocitos123",
   carrasco: "carrasco123",
   lagomar: "lagomar123",
   master: "Santiago2025"
 };
-
 let isLoggedIn = false;
 let currentLocal = null;
 let currentRole = null;
+let originalLocal = null;
 
-// === FORZAR LOGIN AL ABRIR ===
+// === FORZAR LOGIN ===
 function forceLogin() {
   localStorage.removeItem('sushiAdminSession');
   showLogin();
 }
 forceLogin();
 
-// Mostrar modal
 function showLogin() {
   loginModal.classList.add('show');
   modalPassword.focus();
 }
 
-// Cerrar sesión
 function logout() {
   localStorage.removeItem('sushiAdminSession');
   location.reload();
 }
 
-// Iniciar como VISOR
 function enterViewerMode(local) {
-  isLoggedIn = true;
-  currentLocal = local;
-  currentRole = 'viewer';
-
-  loginModal.classList.remove('show');
-  mainApp.style.display = 'block';
-  mainApp.classList.add('readonly-mode');
-  localSelect.value = local;
-  localSelect.disabled = true;
-  render(local);
-  renderDashboard();
-
-  activeUser.textContent = 'VISOR';
-  activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
-  logoutInfo.style.display = 'block';
-  btnLogoutTop.style.display = 'inline-flex';
+  isLoggedIn = true; currentLocal = local; currentRole = 'viewer'; originalLocal = local;
+  loginModal.classList.remove('show'); mainApp.style.display = 'block'; mainApp.classList.add('readonly-mode');
+  localSelect.value = local; localSelect.disabled = false;
+  render(local); renderDashboard();
+  activeUser.textContent = 'VISOR'; activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
+  logoutInfo.style.display = 'block'; btnLogoutTop.style.display = 'inline-flex';
+  applyPermissions();
 }
 
-// Iniciar como ADMIN
 function enterAdminMode(local, role) {
-  isLoggedIn = true;
-  currentLocal = local;
-  currentRole = role;
-
-  loginModal.classList.remove('show');
-  mainApp.style.display = 'block';
-  mainApp.classList.remove('readonly-mode');
-  localSelect.value = local;
-  localSelect.disabled = role !== 'master';
-  render(local);
-  renderDashboard();
-
+  isLoggedIn = true; currentLocal = local; currentRole = role; originalLocal = local;
+  loginModal.classList.remove('show'); mainApp.style.display = 'block'; mainApp.classList.remove('readonly-mode');
+  localSelect.value = local; localSelect.disabled = false;
+  render(local); renderDashboard();
   activeUser.textContent = role === 'master' ? 'MASTER' : 'Local';
   activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
-  logoutInfo.style.display = 'block';
-  btnLogoutTop.style.display = 'inline-flex';
+  logoutInfo.style.display = 'block'; btnLogoutTop.style.display = 'inline-flex';
+  if (role === 'master') {
+    btnOpenPermissions.style.display = 'inline-flex';
+    btnBackupCompleto.style.display = 'inline-flex';
+  }
+  if (role === 'local') loadLocalPermissions(local);
+  applyPermissions();
 }
 
-// Cerrar sesión desde botón superior
-btnLogoutTop.addEventListener('click', (e) => {
-  e.preventDefault();
-  if (confirm("¿Cerrar sesión?")) {
-    logout();
-  }
-});
+function loadLocalPermissions(local) {
+  onValue(ref(db, `userPermissions/${local}`), (snap) => {
+    if (snap.exists()) { currentPermissions = snap.val(); applyPermissions(); updateLocalSelect(); }
+  });
+}
 
-// Cerrar sesión desde modal
-btnLogout.addEventListener('click', (e) => {
-  e.preventDefault();
-  logout();
-});
+btnLogoutTop.addEventListener('click', (e) => { e.preventDefault(); if (confirm("¿Cerrar sesión?")) logout(); });
+btnLogout.addEventListener('click', (e) => { e.preventDefault(); logout(); });
+modalPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnLoginConfirm.click(); } });
 
-// === ENTER EN CONTRASEÑA ===
-modalPassword.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    btnLoginConfirm.click();
-  }
-});
-
-// Confirmar login
 btnLoginConfirm.addEventListener('click', () => {
-  const selected = modalLocal.value;
-  const pass = modalPassword.value.trim();
-
-  if (pass === '') {
-    enterViewerMode(selected);
-  } else if (pass === LOCAL_PASSWORDS.master) {
-    enterAdminMode(selected, 'master');
-  } else if (pass === LOCAL_PASSWORDS[selected]) {
-    enterAdminMode(selected, 'local');
-  } else {
-    loginError.classList.add('show');
-    modalPassword.value = '';
-    setTimeout(() => loginError.classList.remove('show'), 3000);
-  }
+  const selected = modalLocal.value; const pass = modalPassword.value.trim();
+  if (pass === '') enterViewerMode(selected);
+  else if (pass === LOCAL_PASSWORDS.master) enterAdminMode(selected, 'master');
+  else if (pass === LOCAL_PASSWORDS[selected]) enterAdminMode(selected, 'local');
+  else { loginError.classList.add('show'); modalPassword.value = ''; setTimeout(() => loginError.classList.remove('show'), 3000); }
 });
 
-btnLoginCancel.addEventListener('click', () => {
-  if (isLoggedIn) {
-    loginModal.classList.remove('show');
-  } else {
-    alert("Debes ingresar (o dejar vacío) para continuar.");
-  }
-});
+btnLoginCancel.addEventListener('click', () => { if (isLoggedIn) loginModal.classList.remove('show'); else alert("Debes ingresar para continuar."); });
 
-// === EDICIÓN MEJORADA CON MODAL ===
+// === MODAL DE EDICIÓN (SOLUCIÓN AL ERROR) ===
 function openEditModal(id) {
-  get(ref(db, "registros/" + id)).then((snap) => {
+  editingId = id;
+  get(ref(db, "registros/" + id)).then(snap => {
     const d = snap.val();
-    if (!d) return alert("Registro no encontrado");
+    if (!d) return;
 
-    editingId = id;
     editEmpleado.value = d.empleado;
     editDia.value = d.dia;
     editEntrada.value = d.entrada;
     editSalida.value = d.salida;
 
     editModal.classList.add('show');
+    editEmpleado.focus();
   });
 }
 
-btnEditSave.addEventListener('click', () => {
-  if (!editingId) return;
-
-  const segs = calcularSegundos(editEntrada.value, editSalida.value);
-  const updated = {
-    empleado: editEmpleado.value.trim(),
-    dia: editDia.value,
-    entrada: editEntrada.value,
-    salida: editSalida.value,
-    segundos: segs,
-    local: currentLocal
-  };
-
-  set(ref(db, "registros/" + editingId), updated).then(() => {
+editModal.addEventListener('click', (e) => {
+  if (e.target === editModal) {
     editModal.classList.remove('show');
     editingId = null;
-  });
+  }
 });
 
 btnEditCancel.addEventListener('click', () => {
@@ -521,7 +483,130 @@ btnEditCancel.addEventListener('click', () => {
   editingId = null;
 });
 
-// === FUNCIONES DE REGISTRO ===
+btnEditSave.addEventListener('click', () => {
+  if (!editingId) return;
+  if (!currentPermissions.canEdit) return alert("No tienes permiso para editar.");
+
+  const nuevoEmpleado = editEmpleado.value.trim();
+  const nuevoDia = editDia.value;
+  const nuevaEntrada = editEntrada.value;
+  const nuevaSalida = editSalida.value;
+
+  if (!nuevoEmpleado) return alert("El nombre del empleado es obligatorio");
+  if (!nuevaEntrada || !nuevaSalida) return alert("Debes completar entrada y salida");
+
+  const nuevosSegundos = calcularSegundos(nuevaEntrada, nuevaSalida);
+
+  get(ref(db, "registros/" + editingId)).then(snap => {
+    const original = snap.val();
+    set(ref(db, "registros/" + editingId), {
+      ...original,
+      empleado: nuevoEmpleado,
+      dia: nuevoDia,
+      entrada: nuevaEntrada,
+      salida: nuevaSalida,
+      segundos: nuevosSegundos
+    }).then(() => {
+      alert("Registro actualizado correctamente");
+      editModal.classList.remove('show');
+      editingId = null;
+    }).catch(err => {
+      alert("Error al guardar: " + err.message);
+    });
+  });
+});
+
+// === BACKUP COMPLETO ===
+btnBackupCompleto.addEventListener('click', async () => {
+  if (currentRole !== 'master') return alert("Solo el MASTER puede hacer backup completo.");
+ 
+  const snapshot = await get(ref(db, "registros"));
+  const data = [];
+  const localNames = { pocitos: "Pocitos", carrasco: "Carrasco", lagomar: "Lagomar" };
+  snapshot.forEach(c => {
+    const d = c.val();
+    data.push({
+      Local: localNames[d.local] || d.local,
+      Empleado: d.empleado,
+      Día: d.dia.charAt(0).toUpperCase() + d.dia.slice(1),
+      Entrada: d.entrada,
+      Salida: d.salida,
+      Horas: formatHMS(d.segundos)
+    });
+  });
+  if (data.length === 0) return alert("No hay registros para respaldar.");
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Backup Completo");
+  const now = new Date().toISOString().slice(0,16).replace('T', '_').replace(':', '');
+  XLSX.writeFile(wb, `SushiTime_BACKUP_TODOS_${now}.xlsx`);
+  alert(`Backup completo descargado: ${data.length} registros de todos los locales.`);
+});
+
+// === EXCEL EXPORT / IMPORT ===
+btnExportar.addEventListener('click', async () => {
+  if (!currentPermissions.canExportImport) return alert("No tienes permiso para exportar.");
+  const sel = localSelect.value;
+  const snapshot = await get(ref(db, "registros"));
+  const data = [];
+  snapshot.forEach(c => {
+    const d = c.val();
+    if (d.local === sel) {
+      data.push({
+        Empleado: d.empleado,
+        Día: d.dia.charAt(0).toUpperCase() + d.dia.slice(1),
+        Entrada: d.entrada,
+        Salida: d.salida,
+        Horas: formatHMS(d.segundos)
+      });
+    }
+  });
+  if (data.length === 0) return alert("No hay registros para exportar.");
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Registros");
+  const now = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `SushiTime_${sel}_${now}.xlsx`);
+  alert(`Exportado ${data.length} registros a Excel`);
+});
+
+importFile.addEventListener('change', async (e) => {
+  if (!currentPermissions.canExportImport) return alert("No tienes permiso para importar.");
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws);
+      let imported = 0;
+      for (const row of json) {
+        if (!row.Empleado || !row.Día || !row.Entrada || !row.Salida) continue;
+        const id = Date.now() + Math.random();
+        const segs = calcularSegundos(row.Entrada, row.Salida);
+        await set(ref(db, "registros/" + id), {
+          local: localSelect.value,
+          empleado: row.Empleado.trim(),
+          dia: row.Día.toLowerCase(),
+          entrada: row.Entrada,
+          salida: row.Salida,
+          segundos: segs
+        });
+        imported++;
+      }
+      alert(`Importados ${imported} registros correctamente`);
+      importFile.value = '';
+    } catch (err) {
+      alert("Error al importar: " + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// === FUNCIONES ÚTILES ===
 function calcularSegundos(e, s) {
   if (!e || !s) return 0;
   const t1 = new Date("1970-01-01T" + e + ":00");
@@ -530,6 +615,7 @@ function calcularSegundos(e, s) {
   if (diff < 0) diff += 86400;
   return Math.round(diff);
 }
+
 function formatHMS(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -537,38 +623,20 @@ function formatHMS(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
-btnAgregar.addEventListener("click", () => {
-  if (currentRole === 'viewer') return alert("Modo solo lectura. Ingresa con contraseña para editar.");
-  if (!empleado.value.trim()) return alert("Ingrese un nombre de empleado");
-  const id = Date.now();
-  const segs = calcularSegundos(entrada.value, salida.value);
-  const registro = { local: localSelect.value, empleado: empleado.value.trim(), dia: dia.value, entrada: entrada.value, salida: salida.value, segundos: segs };
-  set(ref(db, "registros/" + id), registro);
-  empleado.value = "";
-  salida.value = "";
-});
-
-btnLimpiarLocal.addEventListener("click", () => {
-  if (currentRole === 'viewer') return alert("No puedes limpiar en modo visor.");
-  const sel = localSelect.value;
-  if (!confirm(`¿Limpiar registros del local ${sel}?`)) return;
-  get(ref(db, "registros")).then((snap) => {
-    snap.forEach((c) => { if (c.val().local === sel) remove(ref(db, "registros/" + c.key)); });
-  });
-});
-
+// === RENDERIZADO ===
 function render(sel) {
   localLabel.textContent = localSelect.options[localSelect.selectedIndex].text;
   get(ref(db, "registros")).then((snapshot) => {
-    tabla.innerHTML = "";
-    let total = 0, count = 0;
+    tabla.innerHTML = ""; let total = 0, count = 0;
     snapshot.forEach((c) => {
       const d = c.val();
       if (d.local !== sel) return;
       total += parseInt(d.segundos) || 0;
-      const actions = currentRole !== 'viewer'
-        ? `<button class='action-btn edit-btn' data-id='${c.key}'><i class="fa-solid fa-pen"></i></button>
-           <button class='action-btn del-btn' data-id='${c.key}'><i class="fa-solid fa-trash"></i></button>`
+      const canEditThis = (currentRole === 'master') ||
+                         (currentRole === 'local' && (d.local === originalLocal || currentPermissions.canEditOtherLocations));
+      const actions = (currentRole !== 'viewer' && canEditThis)
+        ? `<button class='action-btn edit-btn' data-id='${c.key}' ${!currentPermissions.canEdit ? 'disabled' : ''}><i class="fa-solid fa-pen"></i></button>
+           <button class='action-btn del-btn' data-id='${c.key}' ${!currentPermissions.canDelete ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>`
         : '';
       tabla.innerHTML += `<tr>
         <td>${d.empleado}</td><td>${d.dia}</td><td>${d.entrada}</td><td>${d.salida}</td><td>${formatHMS(d.segundos)}</td>
@@ -580,7 +648,14 @@ function render(sel) {
     countBadge.textContent = `${count} registros`;
   });
 }
-localSelect.addEventListener("change", () => render(localSelect.value));
+
+localSelect.addEventListener("change", () => {
+  currentLocal = localSelect.value;
+  render(currentLocal);
+  renderDashboard();
+  if (currentRole === 'local') loadLocalPermissions(originalLocal);
+  activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
+});
 
 const tablaDashboard = document.getElementById("tabla-dashboard");
 function renderDashboard(){
@@ -588,51 +663,159 @@ function renderDashboard(){
     const map = {};
     snapshot.forEach(c => {
       const d = c.val();
-      if (!map[d.empleado]) map[d.empleado] = 0;
-      map[d.empleado] += parseInt(d.segundos) || 0;
+      if (!map[d.empleado]) map[d.empleado] = { total: 0, locales: new Set() };
+      map[d.empleado].total += parseInt(d.segundos) || 0;
+      map[d.empleado].locales.add(d.local);
     });
     tablaDashboard.innerHTML = "";
-    const entries = Object.entries(map).sort((a,b) => b[1] - a[1]);
-    entries.forEach(([emp, secs], idx) => {
+    const entries = Object.entries(map).sort((a,b) => b[1].total - a[1].total);
+    const localNames = { pocitos: "Pocitos", carrasco: "Carrasco", lagomar: "Lagomar" };
+    entries.forEach(([emp, data], idx) => {
+      const localesArray = Array.from(data.locales);
+      const localText = localesArray.length === 1
+        ? localNames[localesArray[0]]
+        : localesArray.map(l => localNames[l]).join(", ");
+     
       const className = idx === 0 ? "top-employee" : idx === 1 ? "second-employee" : "";
-      tablaDashboard.innerHTML += `<tr class="${className}"><td>${emp}</td><td>${formatHMS(secs)}</td></tr>`;
+      tablaDashboard.innerHTML += `<tr class="${className}">
+        <td>${emp}</td>
+        <td>${localText}</td>
+        <td>${formatHMS(data.total)}</td>
+      </tr>`;
     });
   });
 }
 
-// === ACTUALIZACIÓN EN TIEMPO REAL ===
 onValue(ref(db, "registros"), (snapshot) => {
-  if (isLoggedIn) {
-    render(localSelect.value);
-    renderDashboard();
-  }
+  if (isLoggedIn) { render(localSelect.value); renderDashboard(); }
 });
 
-// === ACCIONES EN TABLA (EDITAR / ELIMINAR) ===
+// === ACCIONES EN TABLA ===
 tabla.addEventListener("click", (e) => {
   if (currentRole === 'viewer') return;
   const el = e.target.closest('button');
   if (!el) return;
   const id = el.dataset?.id;
   if (!id) return;
-
-  if (el.classList.contains("del-btn")) {
-    if (confirm("¿Eliminar registro?")) remove(ref(db, "registros/" + id));
-  } else if (el.classList.contains("edit-btn")) {
-    openEditModal(id);
-  }
+  get(ref(db, "registros/" + id)).then(snap => {
+    const d = snap.val();
+    if (!d) return;
+    const canEditThis = (currentRole === 'master') ||
+                       (currentRole === 'local' && (d.local === originalLocal || currentPermissions.canEditOtherLocations));
+    if (!canEditThis) return alert("No tienes permiso para editar este registro.");
+    if (el.classList.contains("del-btn") && currentPermissions.canDelete) {
+      if (confirm("¿Eliminar?")) remove(ref(db, "registros/" + id));
+    } else if (el.classList.contains("edit-btn") && currentPermissions.canEdit) {
+      openEditModal(id);
+    }
+  });
 });
 
-/* Loader 5s */
-let lp = document.getElementById('loaderProgress');
-let p = 0;
-const loadInt = setInterval(()=>{ p += 2; if(lp) lp.style.width = p + '%'; if(p >= 100) clearInterval(loadInt); },100);
-setTimeout(()=>{ 
-  const scr = document.getElementById('loaderPage'); 
-  if(scr){scr.style.opacity='0';setTimeout(()=>scr.remove(),600);} 
-},5000);
+// === AGREGAR Y LIMPIAR ===
+btnAgregar.addEventListener("click", () => {
+  if (currentRole === 'viewer') return alert("Modo solo lectura.");
+  if (!currentPermissions.canAdd) return alert("No tienes permiso para agregar.");
+  if (!empleado.value.trim()) return alert("Ingrese un nombre");
+  const id = Date.now();
+  const segs = calcularSegundos(entrada.value, salida.value);
+  const registro = { local: localSelect.value, empleado: empleado.value.trim(), dia: dia.value, entrada: entrada.value, salida: salida.value, segundos: segs };
+  set(ref(db, "registros/" + id), registro);
+  empleado.value = ""; salida.value = "";
+});
 
-/* Tema oscuro */
+btnLimpiarLocal.addEventListener("click", () => {
+  if (currentRole === 'viewer') return alert("No puedes limpiar en modo visor.");
+  if (!currentPermissions.canClear) return alert("No tienes permiso para limpiar.");
+  const sel = localSelect.value;
+  if (!confirm(`¿Limpiar registros del local ${sel}?`)) return;
+  get(ref(db, "registros")).then((snap) => {
+    snap.forEach((c) => { if (c.val().local === sel) remove(ref(db, "registros/" + c.key)); });
+  });
+});
+
+// === PERMISOS ===
+const DEFAULT_PERMISSIONS = { canAdd: true, canEdit: true, canDelete: true, canClear: true, canExportImport: true, canEditOtherLocations: false };
+let permissionsCache = {};
+
+btnOpenPermissions.addEventListener('click', async () => { permissionsModal.classList.add('show'); await loadAllPermissions(); });
+btnClosePermissions.addEventListener('click', () => { permissionsModal.classList.remove('show'); });
+permissionsModal.addEventListener('click', (e) => { if (e.target === permissionsModal) permissionsModal.classList.remove('show'); });
+
+async function loadAllPermissions() {
+  permissionsContent.innerHTML = '<p style="text-align:center;color:var(--muted);">Cargando...</p>';
+  const users = ['pocitos', 'carrasco', 'lagomar'];
+  permissionsCache = {};
+  for (const user of users) {
+    const snap = await get(ref(db, `userPermissions/${user}`));
+    permissionsCache[user] = snap.val() || { ...DEFAULT_PERMISSIONS };
+  }
+  renderPermissionsUI();
+}
+
+function renderPermissionsUI() {
+  const userLabels = { pocitos: 'Pocitos', carrasco: 'Carrasco', lagomar: 'Lagomar' };
+  const items = [
+    { key: 'canAdd', label: 'Agregar registro' },
+    { key: 'canEdit', label: 'Editar registro' },
+    { key: 'canDelete', label: 'Eliminar registro' },
+    { key: 'canClear', label: 'Limpiar local' },
+    { key: 'canExportImport', label: 'Exportar / Importar' },
+    { key: 'canEditOtherLocations', label: 'Editar otros locales' }
+  ];
+  permissionsContent.innerHTML = Object.keys(permissionsCache).map(user => `
+    <div class="user-perm-header"><i class="fa-solid fa-user-shield"></i> ${user}123 → ${userLabels[user]}</div>
+    ${items.map(item => `
+      <div class="perm-item">
+        <span class="perm-label">${item.label}</span>
+        <label class="switch">
+          <input type="checkbox" data-user="${user}" data-key="${item.key}" ${permissionsCache[user][item.key] ? 'checked' : ''}>
+          <span class="slider"></span>
+        </label>
+      </div>
+    `).join('')}
+  `).join('');
+  permissionsContent.querySelectorAll('input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const user = e.target.dataset.user;
+      const key = e.target.dataset.key;
+      permissionsCache[user][key] = e.target.checked;
+    });
+  });
+}
+
+btnSavePermissions.addEventListener('click', async () => {
+  btnSavePermissions.disabled = true; btnSavePermissions.textContent = 'Guardando...';
+  try {
+    for (const [user, perms] of Object.entries(permissionsCache)) {
+      await set(ref(db, `userPermissions/${user}`), perms);
+    }
+    alert('Permisos guardados');
+    permissionsModal.classList.remove('show');
+  } catch (err) { alert('Error'); console.error(err); }
+  finally { btnSavePermissions.disabled = false; btnSavePermissions.textContent = 'Guardar Cambios'; }
+});
+
+function updateLocalSelect() {
+  if (currentRole === 'local' && !currentPermissions.canEditOtherLocations) {
+    localSelect.value = originalLocal;
+    localSelect.querySelectorAll('option').forEach(opt => { opt.disabled = (opt.value !== originalLocal); });
+  } else {
+    localSelect.querySelectorAll('option').forEach(opt => { opt.disabled = false; });
+  }
+}
+
+function applyPermissions() {
+  if (currentRole !== 'local') return;
+  const can = currentPermissions.canExportImport;
+  btnExportar.disabled = !can;
+  btnExportar.style.opacity = can ? '1' : '0.5';
+  btnExportar.style.pointerEvents = can ? 'auto' : 'none';
+  btnImportarLabel.style.opacity = can ? '1' : '0.5';
+  btnImportarLabel.style.pointerEvents = can ? 'auto' : 'none';
+  updateLocalSelect();
+}
+
+// === TEMA OSCURO ===
 const darkModeBtn = document.getElementById('darkModeBtn');
 function applyTheme(saved){
   if(saved === 'dark'){ document.body.classList.add('dark'); darkModeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>'; }
@@ -641,10 +824,14 @@ function applyTheme(saved){
 applyTheme(localStorage.getItem('theme') || 'dark');
 darkModeBtn.addEventListener('click', () => {
   const isDark = document.body.classList.toggle('dark');
-  const newTheme = isDark ? 'dark' : 'light';
-  localStorage.setItem('theme', newTheme);
-  applyTheme(newTheme);
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  applyTheme(isDark ? 'dark' : 'light');
 });
+
+// === LOADER 5s ===
+let lp = document.getElementById('loaderProgress'); let p = 0;
+const loadInt = setInterval(()=>{ p += 2; if(lp) lp.style.width = p + '%'; if(p >= 100) clearInterval(loadInt); },100);
+setTimeout(()=>{ const scr = document.getElementById('loaderPage'); if(scr){scr.style.opacity='0';setTimeout(()=>scr.remove(),600);} },5000);
 </script>
 </body>
 </html>
