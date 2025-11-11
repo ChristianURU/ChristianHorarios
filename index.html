@@ -201,7 +201,16 @@
     #permissionsContent::-webkit-scrollbar-track { background: transparent; }
     #permissionsContent::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.3); border-radius: 3px; }
     body.dark #permissionsContent::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
-    #importFile { display: none; }
+
+    /* ESTILOS MODAL LOGS */
+    #logsModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 99996; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+    #logsModal.show { opacity: 1; pointer-events: auto; }
+    #logsContent table { min-width: 700px; font-size: 13px; }
+    #logsContent th { background: #f3f4f6; font-weight: 600; }
+    body.dark #logsContent th { background: #1f2937; }
+    #logsContent td { padding: 8px 10px; }
+    #logsContent tbody tr:hover { background: rgba(99,102,241,0.05); }
+    body.dark #logsContent tbody tr:hover { background: rgba(99,102,241,0.15); }
   </style>
 </head>
 <body>
@@ -292,21 +301,41 @@
     </div>
   </div>
 
+  <!-- MODAL DE LOGS -->
+  <div id="logsModal">
+    <div class="edit-card" style="max-width:900px;width:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;color:var(--primary);">Historial de Inicios de Sesión</h3>
+        <button id="btnCloseLogs" class="ghost" style="padding:6px 10px;font-size:18px;">×</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <button id="btnExportLogs" class="primary" style="font-size:13px;padding:8px 12px;">
+          <i class="fa-solid fa-file-export"></i> Exportar a Excel
+        </button>
+      </div>
+      <div id="logsContent" style="max-height:60vh;overflow-y:auto;">
+        <table>
+          <thead><tr><th>Fecha</th><th>Usuario</th><th>Local</th><th>IP</th><th>Navegador</th></tr></thead>
+          <tbody id="logsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="container" id="mainApp" style="display:none;">
     <div class="topbar">
       <button class="ghost" id="darkModeBtn" type="button"><i class="fa-solid fa-moon"></i></button>
       <button id="btnExportar" class="primary">
         <i class="fa-solid fa-file-export"></i> Exportar a Excel
       </button>
-      <label class="btn-label primary" id="btnImportarLabel" for="importFile">
-        <i class="fa-solid fa-file-import"></i> Importar desde Excel
-      </label>
-      <input type="file" id="importFile" accept=".xlsx,.xls" />
       <button id="btnBackupCompleto" class="primary" style="display:none;">
         <i class="fa-solid fa-download"></i> Backup Completo (Excel)
       </button>
       <button id="btnOpenPermissions" class="ghost" style="display:none;">
         <i class="fa-solid fa-shield-halved"></i> Permisos
+      </button>
+      <button id="btnOpenLogs" class="ghost" style="display:none;">
+        <i class="fa-solid fa-clock-rotate-left"></i> Logs
       </button>
       <button id="btnLogoutTop" class="ghost" style="display:none;">
         <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
@@ -387,7 +416,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getDatabase, ref, set, get, remove, onValue, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDSxZILNH92QqkfnQeSpYZeboqylAo_6S0",
@@ -440,9 +469,11 @@ const localLabel = document.getElementById("localLabel");
 const btnAgregar = document.getElementById('btnAgregar');
 const btnLimpiarLocal = document.getElementById('btnLimpiarLocal');
 const btnExportar = document.getElementById('btnExportar');
-const importFile = document.getElementById('importFile');
-const btnImportarLabel = document.getElementById('btnImportarLabel');
 const btnBackupCompleto = document.getElementById('btnBackupCompleto');
+const btnOpenLogs = document.getElementById('btnOpenLogs');
+const btnCloseLogs = document.getElementById('btnCloseLogs');
+const btnExportLogs = document.getElementById('btnExportLogs');
+const logsTableBody = document.getElementById('logsTableBody');
 
 let editingId = null;
 let currentPermissions = {
@@ -460,6 +491,94 @@ let isLoggedIn = false;
 let currentLocal = null;
 let currentRole = null;
 let originalLocal = null;
+
+// === OBTENER IP Y NAVEGADOR ===
+async function getClientInfo() {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    return { ip: data.ip, userAgent: navigator.userAgent };
+  } catch {
+    return { ip: 'desconocida', userAgent: navigator.userAgent };
+  }
+}
+
+// === REGISTRAR LOGIN ===
+async function registrarLogin(local, role) {
+  const { ip, userAgent } = await getClientInfo();
+  const ahora = new Date();
+  const fecha = ahora.toLocaleString('es-UY', { timeZone: 'America/Montevideo' });
+
+  const log = {
+    local,
+    role,
+    ip,
+    userAgent,
+    fecha,
+    timestamp: ahora.getTime()
+  };
+
+  const logRef = push(ref(db, 'loginLogs'));
+  await set(logRef, log);
+}
+
+// === MOSTRAR LOGS ===
+async function mostrarLogs() {
+  logsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Cargando...</td></tr>';
+
+  const snapshot = await get(ref(db, 'loginLogs'));
+  const logs = [];
+  snapshot.forEach(c => logs.push({ id: c.key, ...c.val() }));
+  logs.sort((a, b) => b.timestamp - a.timestamp);
+
+  logsTableBody.innerHTML = logs.map(l => `
+    <tr>
+      <td>${l.fecha}</td>
+      <td><strong>${l.role.toUpperCase()}</strong></td>
+      <td>${l.local}</td>
+      <td><code>${l.ip}</code></td>
+      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${l.userAgent}">${l.userAgent}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No hay registros</td></tr>';
+}
+
+// === EXPORTAR LOGS ===
+btnExportLogs.addEventListener('click', async () => {
+  const snapshot = await get(ref(db, 'loginLogs'));
+  const data = [];
+  snapshot.forEach(c => {
+    const d = c.val();
+    data.push({
+      Fecha: d.fecha,
+      Rol: d.role.toUpperCase(),
+      Local: d.local,
+      IP: d.ip,
+      Navegador: d.userAgent
+    });
+  });
+  if (data.length === 0) return alert("No hay logs para exportar.");
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Logs de Sesión");
+  const now = new Date().toISOString().slice(0,16).replace('T', '_').replace(':', '');
+  XLSX.writeFile(wb, `SushiTime_LOGIN_LOGS_${now}.xlsx`);
+  alert(`Exportados ${data.length} inicios de sesión`);
+});
+
+// === EVENTOS LOGS ===
+btnOpenLogs.addEventListener('click', () => {
+  document.getElementById('logsModal').classList.add('show');
+  mostrarLogs();
+});
+btnCloseLogs.addEventListener('click', () => {
+  document.getElementById('logsModal').classList.remove('show');
+});
+document.getElementById('logsModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('logsModal')) {
+    document.getElementById('logsModal').classList.remove('show');
+  }
+});
 
 // === FORZAR LOGIN ===
 function forceLogin() {
@@ -486,9 +605,10 @@ function enterViewerMode(local) {
   activeUser.textContent = 'VISOR'; activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
   logoutInfo.style.display = 'block'; btnLogoutTop.style.display = 'inline-flex';
   applyPermissions();
+  registrarLogin(local, 'viewer');
 }
 
-function enterAdminMode(local, role) {
+async function enterAdminMode(local, role) {
   isLoggedIn = true; currentLocal = local; currentRole = role; originalLocal = local;
   loginModal.classList.remove('show'); mainApp.style.display = 'block'; mainApp.classList.remove('readonly-mode');
   localSelect.value = local; localSelect.disabled = false;
@@ -499,30 +619,24 @@ function enterAdminMode(local, role) {
   if (role === 'master') {
     btnOpenPermissions.style.display = 'inline-flex';
     btnBackupCompleto.style.display = 'inline-flex';
+    btnOpenLogs.style.display = 'inline-flex';
   }
   if (role === 'local') loadLocalPermissions(local);
   applyPermissions();
+  await registrarLogin(local, role);
 }
 
-function loadLocalPermissions(local) {
-  onValue(ref(db, `userPermissions/${local}`), (snap) => {
-    if (snap.exists()) { currentPermissions = snap.val(); applyPermissions(); updateLocalSelect(); }
-  });
-}
-
-btnLogoutTop.addEventListener('click', (e) => { e.preventDefault(); if (confirm("¿Cerrar sesión?")) logout(); });
-btnLogout.addEventListener('click', (e) => { e.preventDefault(); logout(); });
-
-modalPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnLoginConfirm.click(); } });
-
-btnLoginConfirm.addEventListener('click', () => {
+btnLoginConfirm.addEventListener('click', async () => {
   const selected = modalLocal.value; const pass = modalPassword.value.trim();
   if (pass === '') enterViewerMode(selected);
-  else if (pass === LOCAL_PASSWORDS.master) enterAdminMode(selected, 'master');
-  else if (pass === LOCAL_PASSWORDS[selected]) enterAdminMode(selected, 'local');
+  else if (pass === LOCAL_PASSWORDS.master) await enterAdminMode(selected, 'master');
+  else if (pass === LOCAL_PASSWORDS[selected]) await enterAdminMode(selected, 'local');
   else { loginError.classList.add('show'); modalPassword.value = ''; setTimeout(() => loginError.classList.remove('show'), 3000); }
 });
 
+btnLogoutTop.addEventListener('click', (e) => { e.preventDefault(); if (confirm("¿Cerrar sesión?")) logout(); });
+btnLogout.addEventListener('click', (e) => { e.preventDefault(); logout(); });
+modalPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnLoginConfirm.click(); } });
 btnLoginCancel.addEventListener('click', () => { if (isLoggedIn) loginModal.classList.remove('show'); else alert("Debes ingresar para continuar."); });
 
 // === BACKUP COMPLETO ===
@@ -551,7 +665,7 @@ btnBackupCompleto.addEventListener('click', async () => {
   alert(`Backup completo descargado: ${data.length} registros.`);
 });
 
-// === EXPORTAR / IMPORTAR ===
+// === EXPORTAR ===
 btnExportar.addEventListener('click', async () => {
   if (!currentPermissions.canExportImport) return alert("No tienes permiso para exportar.");
   const sel = localSelect.value;
@@ -578,50 +692,12 @@ btnExportar.addEventListener('click', async () => {
   alert(`Exportado ${data.length} registros`);
 });
 
-importFile.addEventListener('change', async (e) => {
-  if (!currentPermissions.canExportImport) return alert("No tienes permiso para importar.");
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async (ev) => {
-    try {
-      const data = new Uint8Array(ev.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(ws);
-      let imported = 0;
-      for (const row of json) {
-        if (!row.Empleado || !row.Día || !row.Entrada || !row.Salida) continue;
-        const id = Date.now() + Math.random();
-        const segs = calcularSegundos(row.Entrada, row.Salida);
-        await set(ref(db, "registros/" + id), {
-          local: localSelect.value,
-          empleado: row.Empleado.trim(),
-          dia: row.Día.toLowerCase(),
-          entrada: row.Entrada,
-          salida: row.Salida,
-          segundos: segs
-        });
-        imported++;
-      }
-      alert(`Importados ${imported} registros correctamente`);
-      importFile.value = '';
-    } catch (err) {
-      alert("Error al importar: " + err.message);
-      console.error(err);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-});
-
 function applyPermissions() {
   if (currentRole !== 'local') return;
   const can = currentPermissions.canExportImport;
   btnExportar.disabled = !can;
   btnExportar.style.opacity = can ? '1' : '0.5';
   btnExportar.style.pointerEvents = can ? 'auto' : 'none';
-  btnImportarLabel.style.opacity = can ? '1' : '0.5';
-  btnImportarLabel.style.pointerEvents = can ? 'auto' : 'none';
   updateLocalSelect();
 }
 
