@@ -557,61 +557,98 @@ async function registrarLogin(local, role) {
   await set(logRef, log);
 }
 
-// === MOSTRAR LOGS ===
-async function mostrarLogs() {
-  logsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Cargando...</td></tr>';
+// === MOSTRAR LOGS EN TIEMPO REAL ===
+let logsUnsubscribe = null;
 
-  const snapshot = await get(ref(db, 'loginLogs'));
-  const logs = [];
-  snapshot.forEach(c => logs.push({ id: c.key, ...c.val() }));
-  logs.sort((a, b) => b.timestamp - a.timestamp);
+async function iniciarLogsEnTiempoReal() {
+  if (logsUnsubscribe) logsUnsubscribe();
 
-  logsTableBody.innerHTML = logs.map(l => `
-    <tr>
-      <td>${l.fecha}</td>
-      <td><strong>${l.role.toUpperCase()}</strong></td>
-      <td>${l.local}</td>
-      <td><code>${l.ip}</code></td>
-      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${l.userAgent}">${l.userAgent}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No hay registros</td></tr>';
+  logsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Cargando logs...</td></tr>';
+
+  try {
+    logsUnsubscribe = onValue(ref(db, 'loginLogs'), (snapshot) => {
+      const logs = [];
+      snapshot.forEach(c => {
+        const data = c.val();
+        logs.push({ id: c.key, ...data });
+      });
+
+      logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      if (logs.length === 0) {
+        logsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No hay inicios de sesión registrados</td></tr>';
+        return;
+      }
+
+      logsTableBody.innerHTML = logs.map(l => `
+        <tr>
+          <td>${l.fecha || '—'}</td>
+          <td><strong>${(l.role || 'local').toUpperCase()}</strong></td>
+          <td>${l.local || '—'}</td>
+          <td><code>${l.ip || '—'}</code></td>
+          <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${l.userAgent || ''}">${l.userAgent || '—'}</td>
+        </tr>
+      `).join('');
+    }, (error) => {
+      console.error("Error cargando logs:", error);
+      logsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Error al cargar logs</td></tr>';
+    });
+  } catch (err) {
+    console.error("Error iniciando logs:", err);
+    logsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Error inesperado</td></tr>';
+  }
 }
 
 // === EXPORTAR LOGS ===
 btnExportLogs.addEventListener('click', async () => {
-  const snapshot = await get(ref(db, 'loginLogs'));
-  const data = [];
-  snapshot.forEach(c => {
-    const d = c.val();
-    data.push({
-      Fecha: d.fecha,
-      Rol: d.role.toUpperCase(),
-      Local: d.local,
-      IP: d.ip,
-      Navegador: d.userAgent
+  try {
+    const snapshot = await get(ref(db, 'loginLogs'));
+    const data = [];
+    snapshot.forEach(c => {
+      const d = c.val();
+      data.push({
+        Fecha: d.fecha || '—',
+        Rol: (d.role || 'local').toUpperCase(),
+        Local: d.local || '—',
+        IP: d.ip || '—',
+        Navegador: d.userAgent || '—'
+      });
     });
-  });
-  if (data.length === 0) return alert("No hay logs para exportar.");
+    if (data.length === 0) return alert("No hay logs para exportar.");
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(data);
-  XLSX.utils.book_append_sheet(wb, ws, "Logs de Sesión");
-  const now = new Date().toISOString().slice(0,16).replace('T', '_').replace(':', '');
-  XLSX.writeFile(wb, `SushiTime_LOGIN_LOGS_${now}.xlsx`);
-  alert(`Exportados ${data.length} inicios de sesión`);
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, "Logs de Sesión");
+    const now = new Date().toISOString().slice(0,16).replace('T', '_').replace(':', '');
+    XLSX.writeFile(wb, `SushiTime_LOGIN_LOGS_${now}.xlsx`);
+    alert(`Exportados ${data.length} inicios de sesión`);
+  } catch (err) {
+    alert("Error al exportar logs");
+    console.error(err);
+  }
 });
 
 // === EVENTOS LOGS ===
 btnOpenLogs.addEventListener('click', () => {
   document.getElementById('logsModal').classList.add('show');
-  mostrarLogs();
+  iniciarLogsEnTiempoReal();
 });
+
 btnCloseLogs.addEventListener('click', () => {
   document.getElementById('logsModal').classList.remove('show');
+  if (logsUnsubscribe) {
+    logsUnsubscribe();
+    logsUnsubscribe = null;
+  }
 });
+
 document.getElementById('logsModal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('logsModal')) {
     document.getElementById('logsModal').classList.remove('show');
+    if (logsUnsubscribe) {
+      logsUnsubscribe();
+      logsUnsubscribe = null;
+    }
   }
 });
 
