@@ -11,9 +11,9 @@
   <style>
     :root { --primary:#6366f1; --secondary:#6b7280; --danger:#ef4444; --bg:#fafafa; --card:#ffffff; --radius:12px; --muted:#6b7280; --success:#10b981; }
     body{font-family:Inter, Arial, sans-serif;background:var(--bg);margin:0;padding:16px;color:#111827;transition:all .3s ease;}
-    body.dark{background:#111827;color:#f3f4f6}
+    body.dark{background:#0f172a !important;}
     .container{max-width:1050px;margin:0 auto;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,0.05);padding:16px;transition:background .3s ease;}
-    body.dark .container{background:#1f2937;}
+    body.dark .container{background:#1e293b;border-color:#334155;box-shadow:0 4px 20px rgba(0,0,0,0.3);}
     .brand{text-align:right;font-size:16px;font-weight:bold;color:var(--primary);margin-bottom:10px;}
    
     /* TOPBAR */
@@ -27,11 +27,12 @@
       min-height:48px;
     }
     .topbar .spacer{flex:1}
-    .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;overflow-x:auto;transition:background .3s ease;}
-    body.dark .card{background:#374151;border-color:#4b5563;color:#f9fafb}
+    .card{border:1px solid #e5e7eb;border-radius:var(--radius);padding:16px;background:#fff;margin-top:14px;overflow-x:auto;transition:all .3s ease;}
+    body.dark .card{background:#1e293b;border-color:#334155;color:#f9fafb;box-shadow:0 4px 20px rgba(0,0,0,0.3);}
     label{display:block;font-size:14px;color:var(--muted);margin-top:10px}
     input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e5e7eb;margin-top:4px;font-size:14px;box-sizing:border-box}
-    body.dark input, body.dark select{background:#1f2937;color:#f3f4f6;border-color:#4b5563;}
+    body.dark input, body.dark select{background:#334155;color:#e2e8f0;border-color:#475569;}
+    body.dark input::placeholder{color:#94a3b8;}
     .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
     .form-row > div{flex:1;min-width:150px}
     .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -57,19 +58,25 @@
     button.primary, .btn-label.primary{background:var(--primary)}
     button.secondary{background:var(--secondary)}
     button.ghost{background:transparent;color:var(--primary);border:1px solid #d1d5db}
-    body.dark button.ghost{color:#f3f4f6;border-color:#4b5563;}
+    body.dark button.ghost{color:#cbd5e1;border-color:#475569;}
+    body.dark button.ghost:hover{background:rgba(255,255,255,0.1);color:#fff;}
     .btn-label.primary:hover{background:#4f46e5;}
     table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;min-width:600px}
     th,td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:left}
     th{background:#f9fafb;color:var(--muted)}
-    body.dark th{background:#1f2937;color:#9ca3af;}
+    body.dark th{background:#1e293b;color:#cbd5e1;border-bottom:1px solid #334155;}
+    body.dark td{border-bottom:1px solid #334155;color:#e2e8f0;}
+    body.dark tbody tr:hover{background:rgba(99,102,241,0.2);}
     .badge{background:rgba(99,102,241,0.1);color:var(--primary);font-size:12px;padding:4px 8px;border-radius:999px;align-self:center}
+    body.dark .badge{background:rgba(99,102,241,0.2);color:#a5b4fc;}
     .action-btn{padding:6px 10px;border-radius:6px;border:none;cursor:pointer;font-size:13px}
     .edit-btn{background:#c7d2fe;color:#1e3a8a}.del-btn{background:#fee2e2;color:#b91c1c}
-    footer.status{position:relative;margin:20px auto 0 auto;display:inline-flex;gap:20px;align-items:center;justify-content:center;background:var(--card);padding:8px 14px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.05);font-size:14px;color:var(--muted);transition:background .3s ease;}
-    body.dark footer.status{background:#0f1724;color:#cbd5e1}
+    footer.status{position:relative;margin:20px auto 0 auto;display:inline-flex;gap:20px;align-items:center;justify-content:center;background:var(--card);padding:8px 14px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.05);font-size:14px;color:var(--muted);transition:all .3s ease;}
+    body.dark footer.status{background:#1e293b;color:#94a3b8;border:1px solid #334155;}
     .status .online{color:#16a34a;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+    body.dark .status .online{color:#34d399;}
     .status .online::before{content:'';width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;animation:blink 1s linear infinite}
+    body.dark .status .online::before{background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.6);}
     @keyframes blink{0%,50%{opacity:1;transform:scale(1)}51%,100%{opacity:0.25;transform:scale(0.9)}}
     
     /* CAMPEÓN DEL MES - EFECTOS ÉPICOS */
@@ -79,11 +86,17 @@
       position: relative;
       overflow: hidden;
     }
+    body.dark .champion-employee {
+      filter: brightness(1.1) saturate(1.2);
+    }
     .champion-employee td {
       color: white !important;
       text-shadow: 0 2px 8px rgba(0,0,0,0.5);
       font-weight: 800;
       font-size: 16px;
+    }
+    body.dark .champion-employee td {
+      text-shadow: 0 2px 6px rgba(0,0,0,0.7) !important;
     }
     .champion-name {
       display: inline-flex;
@@ -99,6 +112,9 @@
       animation: crownPulse 2s infinite;
       filter: drop-shadow(0 0 8px #fbbf24);
     }
+    body.dark .champion-crown {
+      filter: drop-shadow(0 0 10px #fbbf24) !important;
+    }
     .champion-sparkles {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -113,6 +129,9 @@
       border-radius: 50%;
       animation: sparkle 3s linear infinite;
       box-shadow: 0 0 10px #fff, 0 0 20px #fbbf24;
+    }
+    body.dark .champion-sparkles span {
+      box-shadow: 0 0 12px #fbbf24, 0 0 24px #f59e0b !important;
     }
     .champion-sparkles span:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
     .champion-sparkles span:nth-child(2) { top: 50%; left: 80%; animation-delay: 0.5s; }
@@ -142,8 +161,14 @@
       color: #94a3b8 !important;
       font-weight: 700;
     }
+    body.dark .second-employee td:first-child {
+      color: #e2e8f0 !important;
+    }
     .second-employee:hover {
       background: rgba(148, 163, 184, 0.15) !important;
+    }
+    body.dark .second-employee:hover {
+      background: rgba(148, 163, 184, 0.25) !important;
     }
 
     #instagramFloatContainer {
@@ -152,17 +177,19 @@
     #instagramFloat { background: transparent; border: none; cursor: pointer; padding: 0; transition: transform 0.2s ease; animation: pulse 2s infinite; }
     #instagramFloat:hover { transform: scale(1.15); }
     #instagramFloat img { width: 200px; height: auto; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2)); }
-    body.dark #instagramFloat img { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)) brightness(1.1); }
+    body.dark #instagramFloat img { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)) brightness(1.15) !important; }
     @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
     @media (max-width: 768px) { #instagramFloatContainer { display: none !important; } }
     #loginModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #loginModal.show { opacity: 1; pointer-events: auto; }
     .login-card { background: var(--card); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); text-align: center; animation: modalIn .4s ease forwards; }
-    body.dark .login-card { background: #1f2937; }
+    body.dark .login-card { background: #1e293b; }
     @keyframes modalIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .login-card h2 { margin: 0 0 20px; font-size: 22px; color: var(--primary); }
+    body.dark .login-card h2 { color: #a5b4fc; }
     .login-card .input-group { position: relative; margin-bottom: 16px; }
     .login-card .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    body.dark .login-card .input-group i { color: #94a3b8; }
     .login-card input, .login-card select { padding-left: 38px !important; height: 46px; font-size: 15px; }
     .login-card .btn-group { justify-content: center; margin-top: 20px; }
     .login-card .error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
@@ -179,18 +206,21 @@
     #editModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99998; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #editModal.show { opacity: 1; pointer-events: auto; }
     .edit-card { background: var(--card); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); animation: modalIn .3s ease forwards; }
-一款    body.dark .edit-card { background: #1f2937; }
+    body.dark .edit-card { background: #1e293b; }
     .edit-card h3 { margin: 0 0 18px; font-size: 18px; color: var(--primary); }
+    body.dark .edit-card h3 { color: #a5b4fc; }
     .edit-card .form-row { margin-top: 10px; }
     .edit-card .btn-group { justify-content: flex-end; margin-top: 20px; }
     .edit-card .btn-cancel { background: var(--secondary); }
     #permissionsModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 99997; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #permissionsModal.show { opacity: 1; pointer-events: auto; }
     .user-perm-header { background: var(--primary); color: white; padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 18px 0 8px; }
+    body.dark .user-perm-header { color: #fff; }
     .perm-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-    body.dark .perm-item { border-color: #4b5563; }
+    body.dark .perm-item { border-bottom-color: #334155; }
     .perm-item:last-child { border: 0; }
     .perm-label { font-size: 14px; font-weight: 500; }
+    body.dark .perm-label { color: #cbd5e1; }
     .switch{position:relative;display:inline-block;width:48px;height:26px;}
     .switch input{opacity:0;width:0;height:0;}
     .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.4s;border-radius:34px;}
@@ -200,17 +230,22 @@
     #permissionsContent::-webkit-scrollbar { width: 6px; }
     #permissionsContent::-webkit-scrollbar-track { background: transparent; }
     #permissionsContent::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.3); border-radius: 3px; }
-    body.dark #permissionsContent::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+    body.dark #permissionsContent::-webkit-scrollbar-track { background: #1e293b; }
+    body.dark #permissionsContent::-webkit-scrollbar-thumb { background: #475569; }
+    body.dark #permissionsContent::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
     /* ESTILOS MODAL LOGS */
     #logsModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 99996; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #logsModal.show { opacity: 1; pointer-events: auto; }
     #logsContent table { min-width: 700px; font-size: 13px; }
     #logsContent th { background: #f3f4f6; font-weight: 600; }
-    body.dark #logsContent th { background: #1f2937; }
+    body.dark #logsContent th { background: #1e293b; }
     #logsContent td { padding: 8px 10px; }
     #logsContent tbody tr:hover { background: rgba(99,102,241,0.05); }
     body.dark #logsContent tbody tr:hover { background: rgba(99,102,241,0.15); }
+
+    /* TRANSICIONES GLOBALES */
+    * { transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; }
   </style>
 </head>
 <body>
@@ -619,7 +654,6 @@ btnLoginConfirm.addEventListener('click', async () => {
   const selected = modalLocal.value;
   const pass = modalPassword.value.trim();
 
-  // CONTRASEÑA OBLIGATORIA
   if (!pass) {
     loginError.textContent = "La contraseña es obligatoria";
     loginError.classList.add('show');
