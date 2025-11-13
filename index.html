@@ -179,7 +179,7 @@
     #editModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99998; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
     #editModal.show { opacity: 1; pointer-events: auto; }
     .edit-card { background: var(--card); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); animation: modalIn .3s ease forwards; }
-    body.dark .edit-card { background: #1f2937; }
+一款    body.dark .edit-card { background: #1f2937; }
     .edit-card h3 { margin: 0 0 18px; font-size: 18px; color: var(--primary); }
     .edit-card .form-row { margin-top: 10px; }
     .edit-card .btn-group { justify-content: flex-end; margin-top: 20px; }
@@ -240,7 +240,7 @@
       </div>
       <div class="input-group">
         <i class="fa-solid fa-key"></i>
-        <input type="password" id="modalPassword" placeholder="Contraseña (opcional para modo vista)" />
+        <input type="password" id="modalPassword" placeholder="Contraseña" required />
       </div>
       <p class="error" id="loginError">Contraseña incorrecta</p>
       <div class="btn-group">
@@ -597,17 +597,6 @@ function logout() {
   location.reload();
 }
 
-function enterViewerMode(local) {
-  isLoggedIn = true; currentLocal = local; currentRole = 'viewer'; originalLocal = local;
-  loginModal.classList.remove('show'); mainApp.style.display = 'block'; mainApp.classList.add('readonly-mode');
-  localSelect.value = local; localSelect.disabled = false;
-  render(local); renderDashboard();
-  activeUser.textContent = 'VISOR'; activeLocal.textContent = localSelect.options[localSelect.selectedIndex].text;
-  logoutInfo.style.display = 'block'; btnLogoutTop.style.display = 'inline-flex';
-  applyPermissions();
-  registrarLogin(local, 'viewer');
-}
-
 async function enterAdminMode(local, role) {
   isLoggedIn = true; currentLocal = local; currentRole = role; originalLocal = local;
   loginModal.classList.remove('show'); mainApp.style.display = 'block'; mainApp.classList.remove('readonly-mode');
@@ -627,17 +616,40 @@ async function enterAdminMode(local, role) {
 }
 
 btnLoginConfirm.addEventListener('click', async () => {
-  const selected = modalLocal.value; const pass = modalPassword.value.trim();
-  if (pass === '') enterViewerMode(selected);
-  else if (pass === LOCAL_PASSWORDS.master) await enterAdminMode(selected, 'master');
-  else if (pass === LOCAL_PASSWORDS[selected]) await enterAdminMode(selected, 'local');
-  else { loginError.classList.add('show'); modalPassword.value = ''; setTimeout(() => loginError.classList.remove('show'), 3000); }
+  const selected = modalLocal.value;
+  const pass = modalPassword.value.trim();
+
+  // CONTRASEÑA OBLIGATORIA
+  if (!pass) {
+    loginError.textContent = "La contraseña es obligatoria";
+    loginError.classList.add('show');
+    modalPassword.focus();
+    setTimeout(() => loginError.classList.remove('show'), 3000);
+    return;
+  }
+
+  if (pass === LOCAL_PASSWORDS.master) {
+    await enterAdminMode(selected, 'master');
+  } else if (pass === LOCAL_PASSWORDS[selected]) {
+    await enterAdminMode(selected, 'local');
+  } else {
+    loginError.textContent = "Contraseña incorrecta";
+    loginError.classList.add('show');
+    modalPassword.value = '';
+    modalPassword.focus();
+    setTimeout(() => loginError.classList.remove('show'), 3000);
+  }
 });
 
 btnLogoutTop.addEventListener('click', (e) => { e.preventDefault(); if (confirm("¿Cerrar sesión?")) logout(); });
 btnLogout.addEventListener('click', (e) => { e.preventDefault(); logout(); });
 modalPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btnLoginConfirm.click(); } });
-btnLoginCancel.addEventListener('click', () => { if (isLoggedIn) loginModal.classList.remove('show'); else alert("Debes ingresar para continuar."); });
+btnLoginCancel.addEventListener('click', () => {
+  if (confirm("¿Cancelar acceso? Se cerrará la página.")) {
+    alert("Acceso denegado. Debes ingresar con contraseña.");
+    window.close();
+  }
+});
 
 // === BACKUP COMPLETO ===
 btnBackupCompleto.addEventListener('click', async () => {
@@ -718,7 +730,6 @@ function formatHMS(seconds) {
 }
 
 btnAgregar.addEventListener("click", () => {
-  if (currentRole === 'viewer') return alert("Modo solo lectura.");
   if (!currentPermissions.canAdd) return alert("No tienes permiso para agregar.");
   if (!empleado.value.trim()) return alert("Ingrese un nombre");
   const id = Date.now();
@@ -729,7 +740,6 @@ btnAgregar.addEventListener("click", () => {
 });
 
 btnLimpiarLocal.addEventListener("click", () => {
-  if (currentRole === 'viewer') return alert("No puedes limpiar en modo visor.");
   if (!currentPermissions.canClear) return alert("No tienes permiso para limpiar.");
   const sel = localSelect.value;
   if (!confirm(`¿Limpiar registros del local ${sel}?`)) return;
@@ -748,7 +758,7 @@ function render(sel) {
       total += parseInt(d.segundos) || 0;
       const canEditThis = (currentRole === 'master') ||
                          (currentRole === 'local' && (d.local === originalLocal || currentPermissions.canEditOtherLocations));
-      const actions = (currentRole !== 'viewer' && canEditThis)
+      const actions = canEditThis
         ? `<button class='action-btn edit-btn' data-id='${c.key}' ${!currentPermissions.canEdit ? 'disabled' : ''}><i class="fa-solid fa-pen"></i></button>
            <button class='action-btn del-btn' data-id='${c.key}' ${!currentPermissions.canDelete ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>`
         : '';
@@ -892,7 +902,6 @@ btnEditSave.addEventListener('click', () => {
 });
 
 tabla.addEventListener("click", (e) => {
-  if (currentRole === 'viewer') return;
   const el = e.target.closest('button');
   if (!el) return;
   const id = el.dataset?.id;
@@ -1000,6 +1009,12 @@ function updateLocalSelect() {
   } else {
     localSelect.querySelectorAll('option').forEach(opt => { opt.disabled = false; });
   }
+}
+
+async function loadLocalPermissions(local) {
+  const snap = await get(ref(db, `userPermissions/${local}`));
+  currentPermissions = snap.val() || { ...DEFAULT_PERMISSIONS };
+  applyPermissions();
 }
 </script>
 </body>
